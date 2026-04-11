@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Veritas — Evidence Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Geist:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0a0b;--surface:#111113;--surface2:#1a1a1e;--surface3:#222228;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--border3:rgba(255,255,255,0.2);
+  --text:#f0ede8;--text2:#8a8785;--text3:#4a4845;
+  --accent:#c8b560;--accent2:#8c6e2a;--accent3:#f0d878;
+  --green:#3a7d5a;--green-light:#6ab88a;
+  --amber:#b87c2a;--amber-light:#e8a84a;
+  --red:#8a3030;--red-light:#d06060;
+  --blue:#2a4a8a;--blue-light:#6890d8;
+  --purple:#6a4a9a;--purple-light:#a880e8;
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'Geist',system-ui,sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --sidebar:260px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+
+/* PASSWORD */
+#pw-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:20px;}
+#pw-screen .logo-word{font-family:var(--font-display);font-size:42px;color:var(--accent);}
+#pw-screen input{background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:10px 16px;border-radius:8px;font-size:15px;font-family:var(--font-body);width:280px;outline:none;text-align:center;}
+#pw-screen input:focus{border-color:var(--accent2);}
+#pw-screen button{background:var(--accent);color:#0a0a0b;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:500;font-family:var(--font-body);cursor:pointer;}
+#pw-err{color:var(--red-light);font-size:13px;font-family:var(--font-mono);}
+
+/* LAYOUT */
+#app{display:none;height:100vh;flex-direction:column;}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:12px;}
+.logo{display:flex;align-items:baseline;gap:10px;}
+.logo-word{font-family:var(--font-display);font-size:24px;color:var(--accent);}
+.logo-tag{font-size:10px;font-weight:300;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.hbadge{font-family:var(--font-mono);font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:6px;}
+.hbtn{font-size:12px;color:var(--text3);background:transparent;border:1px solid var(--border);padding:5px 12px;border-radius:6px;cursor:pointer;font-family:var(--font-body);transition:all 0.15s;}
+.hbtn:hover{color:var(--text);border-color:var(--border2);}
+.hbtn.accent{background:var(--accent);color:#0a0a0b;border-color:var(--accent);font-weight:500;}
+.hbtn.accent:hover{background:var(--accent3);}
+
+/* BODY */
+#body{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+#sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+.sb-section{padding:12px;border-bottom:1px solid var(--border);}
+.sb-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--font-mono);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.sb-label button{font-size:10px;color:var(--accent2);background:none;border:none;cursor:pointer;font-family:var(--font-mono);padding:0;}
+.sb-label button:hover{color:var(--accent);}
+
+/* CATEGORIES */
+#cat-list{display:flex;flex-direction:column;gap:4px;}
+.cat-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.15s;user-select:none;}
+.cat-item:hover{background:var(--surface2);border-color:var(--border);}
+.cat-item.active{background:var(--surface2);border-color:var(--accent2);}
+.cat-item.dragging{opacity:0.4;}
+.cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cat-name{font-size:13px;color:var(--text2);flex:1;}
+.cat-item.active .cat-name{color:var(--text);}
+.cat-count{font-size:10px;color:var(--text3);font-family:var(--font-mono);}
+.cat-drag{font-size:12px;color:var(--text3);cursor:grab;padding:0 2px;}
+.cat-del{font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;opacity:0;transition:opacity 0.15s;padding:0 2px;}
+.cat-item:hover .cat-del{opacity:1;}
+.cat-del:hover{color:var(--red-light);}
+.add-cat-row{display:flex;gap:6px;margin-top:8px;}
+.add-cat-row input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:var(--font-body);outline:none;min-width:0;}
+.add-cat-row input:focus{border-color:var(--accent2);}
+.add-cat-row button{background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:5px 10px;border-radius:6px;font-size:13px;cursor:pointer;}
+
+/* HISTORY */
+#hist-list{flex:1;overflow-y:auto;padding:8px;}
+#hist-list::-webkit-scrollbar{width:3px;}
+#hist-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.hist-item{padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:4px;transition:all 0.15s;}
+.hist-item:hover{background:var(--surface2);border-color:var(--border);}
+.hist-item.active{background:var(--surface2);border-color:var(--accent2);}
+.hist-q{font-size:12px;color:var(--text2);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-item.active .hist-q{color:var(--text);}
+.hist-meta{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:3px;display:flex;align-items:center;gap:6px;}
+.hist-cat-dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
+.hist-ack{font-size:9px;color:var(--purple-light);font-family:var(--font-mono);}
+.no-hist{font-size:12px;color:var(--text3);text-align:center;padding:20px 10px;font-style:italic;}
+
+/* ACKNOWLEDGED FACTS */
+#ack-list{padding:8px;max-height:180px;overflow-y:auto;}
+#ack-list::-webkit-scrollbar{width:3px;}
+#ack-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.ack-item{padding:6px 10px;border-radius:6px;background:rgba(106,74,154,0.1);border:1px solid rgba(106,74,154,0.2);margin-bottom:4px;}
+.ack-q{font-size:11px;color:var(--purple-light);line-height:1.4;}
+.ack-score{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px;}
+.no-ack{font-size:11px;color:var(--text3);text-align:center;padding:12px;font-style:italic;}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+#chat-log{flex:1;overflow-y:auto;padding:24px 32px;display:flex;flex-direction:column;gap:20px;}
+#chat-log::-webkit-scrollbar{width:4px;}
+#chat-log::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* EMPTY */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 0;text-align:center;gap:20px;}
+.empty-icon{width:52px;height:52px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;background:var(--surface2);}
+.empty-icon svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:1.5;}
+.empty-title{font-family:var(--font-display);font-size:20px;color:var(--text);}
+.empty-sub{font-size:13px;color:var(--text2);max-width:340px;line-height:1.7;}
+.starters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:540px;}
+.starter{font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:7px 14px;border-radius:20px;cursor:pointer;transition:all 0.15s;font-family:var(--font-body);}
+.starter:hover{color:var(--text);border-color:var(--accent2);}
+
+/* CAT HEADER */
+.cat-header{display:flex;align-items:center;gap:8px;padding:10px 32px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.cat-header-dot{width:8px;height:8px;border-radius:50%;}
+.cat-header-name{font-size:12px;color:var(--text2);}
+.cat-header-count{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
+.new-session-btn{margin-left:auto;font-size:11px;color:var(--accent2);background:none;border:none;cursor:pointer;font-family:var(--font-mono);}
+.new-session-btn:hover{color:var(--accent);}
+
+/* MESSAGES */
+.msg-user{display:flex;justify-content:flex-end;}
+.msg-user-bubble{background:var(--surface2);border:1px solid var(--border2);border-radius:14px;border-bottom-right-radius:3px;padding:11px 15px;max-width:75%;font-size:14px;color:var(--text);line-height:1.6;}
+.msg-bot{display:flex;flex-direction:column;gap:0;}
+.bot-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;border-top-left-radius:3px;overflow:hidden;}
+.bot-card.acknowledged{border-color:rgba(106,74,154,0.4);}
+.bot-summary{padding:14px 18px;font-size:14px;color:var(--text);line-height:1.7;border-bottom:1px solid var(--border);}
+.bot-score-section{padding:12px 18px;border-bottom:1px solid var(--border);}
+.score-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.score-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--font-mono);}
+.score-number{font-family:var(--font-mono);font-size:20px;font-weight:500;}
+.score-bar-bg{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:8px;}
+.score-bar-fill{height:3px;border-radius:2px;transition:width 0.8s cubic-bezier(0.16,1,0.3,1);}
+.verdict-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.verdict-pill{font-size:9px;font-family:var(--font-mono);font-weight:500;padding:3px 9px;border-radius:20px;letter-spacing:0.08em;text-transform:uppercase;}
+.pill-confirmed{background:rgba(58,125,90,0.2);color:var(--green-light);border:1px solid rgba(58,125,90,0.4);}
+.pill-likely{background:rgba(58,125,90,0.12);color:var(--green-light);border:1px solid rgba(58,125,90,0.25);}
+.pill-disputed{background:rgba(184,124,42,0.2);color:var(--amber-light);border:1px solid rgba(184,124,42,0.4);}
+.pill-insufficient{background:rgba(184,124,42,0.12);color:var(--amber-light);border:1px solid rgba(184,124,42,0.25);}
+.pill-false{background:rgba(138,48,48,0.2);color:var(--red-light);border:1px solid rgba(138,48,48,0.4);}
+.pill-acknowledged{background:rgba(106,74,154,0.25);color:var(--purple-light);border:1px solid rgba(106,74,154,0.5);}
+.ack-badge{font-size:9px;font-family:var(--font-mono);color:var(--purple-light);background:rgba(106,74,154,0.15);border:1px solid rgba(106,74,154,0.3);padding:2px 8px;border-radius:10px;}
+.bot-meta{padding:10px 18px;display:flex;flex-wrap:wrap;gap:14px;}
+.meta-item{display:flex;flex-direction:column;gap:2px;}
+.meta-key{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--font-mono);}
+.meta-val{font-size:11px;color:var(--text2);font-family:var(--font-mono);}
+.bot-reasoning{padding:10px 18px;font-size:12px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);font-style:italic;}
+.bot-disputes{padding:9px 18px;font-size:12px;color:var(--amber-light);background:rgba(184,124,42,0.07);border-top:1px solid rgba(184,124,42,0.15);line-height:1.6;}
+.bot-memory{padding:7px 18px;font-size:11px;color:var(--blue-light);background:rgba(42,74,138,0.08);border-top:1px solid rgba(42,74,138,0.15);font-family:var(--font-mono);}
+.bot-actions{padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;}
+.action-btn{font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:var(--font-mono);border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all 0.15s;}
+.action-btn:hover{color:var(--text);border-color:var(--border3);}
+.action-btn.ack-btn{border-color:rgba(106,74,154,0.4);color:var(--purple-light);}
+.action-btn.ack-btn:hover{background:rgba(106,74,154,0.15);}
+.action-btn.debate-btn{border-color:var(--accent2);color:var(--accent);}
+.action-btn.debate-btn:hover{background:rgba(200,181,96,0.1);}
+.ack-note{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-left:auto;}
+
+/* THINKING */
+.thinking-bubble{background:var(--surface);border:1px solid var(--border);border-radius:14px;border-top-left-radius:3px;padding:14px 18px;display:flex;align-items:center;gap:10px;}
+.thinking-dots{display:flex;gap:4px;}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--accent2);animation:pulse 1.2s ease-in-out infinite;}
+.dot:nth-child(2){animation-delay:0.2s;}
+.dot:nth-child(3){animation-delay:0.4s;}
+@keyframes pulse{0%,80%,100%{opacity:0.3;transform:scale(0.85);}40%{opacity:1;transform:scale(1);}}
+.thinking-text{font-size:12px;color:var(--text3);font-family:var(--font-mono);}
+
+/* DEBATE INPUT */
+.debate-row{display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(200,181,96,0.05);border:1px solid rgba(200,181,96,0.15);border-radius:10px;margin-top:8px;}
+.debate-label{font-size:11px;color:var(--accent);font-family:var(--font-mono);}
+.debate-input-row{display:flex;gap:8px;}
+.debate-input-row input{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;}
+.debate-input-row input:focus{border-color:var(--accent2);}
+.debate-input-row button{background:var(--accent);color:#0a0a0b;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);white-space:nowrap;}
+
+/* INPUT ZONE */
+.input-zone{padding:16px 32px 24px;border-top:1px solid var(--border);flex-shrink:0;}
+.cat-select-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.cat-select-row label{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
+.cat-select-row select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;font-family:var(--font-body);outline:none;cursor:pointer;}
+.input-wrap{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:10px 12px 10px 18px;transition:border-color 0.15s;}
+.input-wrap:focus-within{border-color:var(--accent2);}
+#q-input{flex:1;background:transparent;border:none;outline:none;font-family:var(--font-body);font-size:14px;color:var(--text);min-width:0;}
+#q-input::placeholder{color:var(--text3);}
+#ask-btn{background:var(--accent);color:#0a0a0b;border:none;padding:8px 18px;border-radius:9px;font-size:13px;font-weight:500;font-family:var(--font-body);cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+#ask-btn:hover{background:var(--accent3);}
+#ask-btn:disabled{background:var(--text3);color:var(--surface);cursor:not-allowed;}
+.input-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:8px;font-family:var(--font-mono);}
+.error-bubble{background:rgba(138,48,48,0.15);border:1px solid rgba(138,48,48,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--red-light);font-family:var(--font-mono);}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD -->
+<div id="pw-screen">
+  <div class="logo-word">Veritas</div>
+  <div style="font-size:13px;color:var(--text3);font-family:var(--font-mono);">Evidence Intelligence</div>
+  <input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPW()"/>
+  <button onclick="checkPW()">Enter</button>
+  <div id="pw-err"></div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="logo">
+      <span class="logo-word">Veritas</span>
+      <span class="logo-tag">Evidence Intelligence</span>
+    </div>
+    <div class="header-right">
+      <span class="hbadge" id="mem-count">0 exchanges</span>
+      <span class="hbadge" id="ack-count" style="color:var(--purple-light);">0 acknowledged</span>
+      <button class="hbtn" onclick="newSession()">New session</button>
+    </div>
+  </header>
+
+  <div id="body">
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+      <div class="sb-section">
+        <div class="sb-label">
+          Categories
+          <button onclick="toggleAddCat()">+ add</button>
+        </div>
+        <div id="cat-list"></div>
+        <div class="add-cat-row" id="add-cat-row" style="display:none;">
+          <input type="text" id="new-cat-input" placeholder="Category name..." maxlength="30" onkeydown="if(event.key==='Enter')addCategory()"/>
+          <button onclick="addCategory()">+</button>
+        </div>
+      </div>
+
+      <div class="sb-section" style="flex-shrink:0;">
+        <div class="sb-label">Acknowledged Facts</div>
+        <div id="ack-list"></div>
+      </div>
+
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
+        <div class="sb-section" style="border-bottom:none;padding-bottom:4px;">
+          <div class="sb-label">History</div>
+        </div>
+        <div id="hist-list"></div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main">
+      <div class="cat-header" id="cat-header" style="display:none;">
+        <div class="cat-header-dot" id="cat-header-dot"></div>
+        <span class="cat-header-name" id="cat-header-name"></span>
+        <span class="cat-header-count" id="cat-header-count"></span>
+        <button class="new-session-btn" onclick="newSession()">+ new session</button>
+      </div>
+      <div id="chat-log"></div>
+      <div class="input-zone">
+        <div class="cat-select-row">
+          <label>Category:</label>
+          <select id="cat-select"></select>
+        </div>
+        <div class="input-wrap">
+          <input type="text" id="q-input" placeholder="Ask Veritas anything — facts, history, controversies..." autocomplete="off"/>
+          <button id="ask-btn" onclick="ask()">Analyze</button>
+        </div>
+        <div class="input-hint">Evidence-scored · Bias-checked · Debates tracked · Enter to send</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+const PASSWORD = 'Veritas2026!';
+const FB_CONFIG = {
+  apiKey: "AIzaSyCrW9Lrf7fWVqRxKqsnuPK0tL6UYbd_qds",
+  authDomain: "philinity-893d2.firebaseapp.com",
+  databaseURL: "https://philinity-893d2-default-rtdb.firebaseio.com",
+  projectId: "philinity-893d2",
+  storageBucket: "philinity-893d2.appspot.com",
+  messagingSenderId: "442870133414",
+  appId: "1:442870133414:web:placeholder"
+};
+
+firebase.initializeApp(FB_CONFIG);
+const db = firebase.database();
+const auth = firebase.auth();
+
+let anthropicKey = '';
+let categories = [];
+let sessions = {};
+let acknowledgedFacts = [];
+let activeCategory = null;
+let activeSessionId = null;
+let conversationHistory = [];
+let dragSrc = null;
+
+const CAT_COLORS = ['#6890d8','#6ab88a','#e8a84a','#d06060','#a880e8','#5dcaa5','#f0997b'];
+const DEFAULT_CATS = [
+  {id:'bible',name:'Bible & Religion',color:'#6890d8',order:0},
+  {id:'history',name:'History',color:'#6ab88a',order:1},
+  {id:'science',name:'Science',color:'#e8a84a',order:2},
+  {id:'government',name:'Government & Politics',color:'#d06060',order:3},
+  {id:'conspiracy',name:'Conspiracy & Disputed Events',color:'#a880e8',order:4},
+  {id:'health',name:'Health & Medicine',color:'#5dcaa5',order:5},
+  {id:'war',name:'War & Military',color:'#f0997b',order:6},
+];
+
+const STARTERS = [
+  'Did the US really land on the moon in 1969?',
+  'What really happened at the World Trade Center on 9/11?',
+  'Was the Holocaust real and documented?',
+  'Did Julius Caesar truly exist?',
+  'Was the atomic bomb dropped on Japan justified?',
+  'Did the JFK assassination involve a conspiracy?',
+  'Is the Earth older than 6,000 years?',
+  'Was the 2020 US election stolen?',
+];
+
+const SYSTEM = `You are Veritas, a strict evidence-based research AI. You acknowledge bias exists in mainstream narratives and you actively work to separate documented fact from opinion, propaganda, or unsupported consensus.
+
+You answer using ONLY:
+1. Documented historical facts confirmed by multiple independent witnesses or primary sources
+2. Physical, archaeological, or forensic evidence
+3. Official records (government, institutional, legal)
+4. Scientific data that is reproducible and independently verified
+
+ANTI-BIAS RULES:
+- Treat government sources, mainstream media, and academic consensus as ONE source — not multiple. They often share the same origin.
+- Flag when "consensus" relies on circular sourcing (media citing media, institutions citing institutions).
+- If primary evidence contradicts official narrative, note it clearly.
+- Never dismiss claims simply because they are labeled "conspiracy theory." Evaluate the evidence.
+- Score conservatively. Inflating confidence because something is "widely accepted" is a failure mode.
+
+CONFIDENCE SCORING:
+95-100: Multiple truly independent primary sources + physical evidence + no credible contradicting evidence
+80-94: Strong primary documentation, multiple independent witnesses, minor gaps
+60-79: Good documentation but corroboration has gaps or single-origin sourcing
+40-59: Some evidence, significant gaps, conflicting primary records exist
+20-39: Sparse or indirect evidence, heavy reliance on secondary sources
+0-19: No credible primary corroboration found
+
+VERDICTS:
+CONFIRMED — overwhelming convergent independent evidence
+LIKELY — strong but incomplete independent evidence  
+DISPUTED — credible competing claims with evidence on both sides
+INSUFFICIENT EVIDENCE — not enough primary documented record
+FALSE — primary evidence directly contradicts the premise
+OFFICIALLY CLAIMED — widely reported but primary evidence is thin or circular
+
+If prior conversation context was used, note it briefly.
+
+Respond ONLY as valid JSON (no markdown, no preamble):
+{
+  "summary": "2-3 sentence factual answer — include what IS documented AND what is NOT",
+  "confidence_score": <integer 0-100>,
+  "confidence_reasoning": "Explain the score — what primary evidence exists, what is missing, whether sourcing is circular",
+  "evidence_type": ["list of evidence types used"],
+  "corroborating_sources": <integer — truly independent sources only>,
+  "known_disputes": "Documented factual disputes, contradicting evidence, or 'None'",
+  "verdict": "CONFIRMED | LIKELY | DISPUTED | INSUFFICIENT EVIDENCE | FALSE | OFFICIALLY CLAIMED",
+  "bias_flag": "Any detected bias in mainstream framing of this topic, or null",
+  "memory_reference": "If prior conversation context was used, describe briefly. Otherwise null."
+}`;
+
+function checkPW() {
+  const v = document.getElementById('pw-input').value;
+  if (v === PASSWORD) {
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    initApp();
+  } else {
+    document.getElementById('pw-err').textContent = 'Incorrect password.';
+  }
+}
+document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') checkPW(); });
+
+async function initApp() {
+  await auth.signInAnonymously();
+  // Load API key
+  try {
+    const snap = await db.ref('config/veritas_key').get();
+    if (snap.exists()) anthropicKey = snap.val();
+  } catch(e) { console.warn('Key load failed:', e); }
+
+  // Load categories
+  const catSnap = await db.ref('veritas/categories').get();
+  if (catSnap.exists()) {
+    categories = Object.values(catSnap.val()).sort((a,b) => a.order - b.order);
+  } else {
+    categories = DEFAULT_CATS;
+    saveCategories();
+  }
+
+  // Load sessions
+  const sessSnap = await db.ref('veritas/sessions').get();
+  if (sessSnap.exists()) sessions = sessSnap.val();
+
+  // Load acknowledged facts
+  const ackSnap = await db.ref('veritas/acknowledged').get();
+  if (ackSnap.exists()) acknowledgedFacts = Object.values(ackSnap.val());
+
+  renderCats();
+  renderCatSelect();
+  renderAck();
+  renderHist();
+  showEmpty();
+}
+
+function saveCategories() {
+  const obj = {};
+  categories.forEach(c => { obj[c.id] = c; });
+  db.ref('veritas/categories').set(obj);
+}
+
+function renderCats() {
+  const list = document.getElementById('cat-list');
+  list.innerHTML = '';
+  categories.forEach((cat, i) => {
+    const div = document.createElement('div');
+    div.className = 'cat-item' + (activeCategory === cat.id ? ' active' : '');
+    div.draggable = true;
+    div.dataset.id = cat.id;
+    div.innerHTML = `
+      <span class="cat-drag" title="drag to reorder">⠿</span>
+      <div class="cat-dot" style="background:${cat.color}"></div>
+      <span class="cat-name">${cat.name}</span>
+      <span class="cat-count">${countSessions(cat.id)}</span>
+      <button class="cat-del" onclick="deleteCategory('${cat.id}',event)" title="delete">✕</button>
+    `;
+    div.addEventListener('click', () => selectCategory(cat.id));
+    div.addEventListener('dragstart', e => { dragSrc = i; div.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    div.addEventListener('dragend', () => div.classList.remove('dragging'));
+    div.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+    div.addEventListener('drop', e => { e.preventDefault(); if(dragSrc===null||dragSrc===i) return; const moved=categories.splice(dragSrc,1)[0]; categories.splice(i,0,moved); categories.forEach((c,idx)=>c.order=idx); dragSrc=null; saveCategories(); renderCats(); renderCatSelect(); });
+    list.appendChild(div);
+  });
+}
+
+function renderCatSelect() {
+  const sel = document.getElementById('cat-select');
+  sel.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  if (activeCategory) sel.value = activeCategory;
+}
+
+function countSessions(catId) {
+  return Object.values(sessions).filter(s => s.category === catId).length;
+}
+
+function selectCategory(catId) {
+  activeCategory = catId;
+  activeSessionId = null;
+  conversationHistory = [];
+  renderCats();
+  renderHist();
+  document.getElementById('cat-select').value = catId;
+  const cat = categories.find(c=>c.id===catId);
+  if (cat) {
+    const hdr = document.getElementById('cat-header');
+    hdr.style.display = 'flex';
+    document.getElementById('cat-header-dot').style.background = cat.color;
+    document.getElementById('cat-header-name').textContent = cat.name;
+    const count = countSessions(catId);
+    document.getElementById('cat-header-count').textContent = `${count} session${count!==1?'s':''}`;
+  }
+  showEmpty();
+}
+
+function toggleAddCat() {
+  const row = document.getElementById('add-cat-row');
+  row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+  if (row.style.display === 'flex') document.getElementById('new-cat-input').focus();
+}
+
+function addCategory() {
+  const inp = document.getElementById('new-cat-input');
+  const name = inp.value.trim();
+  if (!name) return;
+  const id = name.toLowerCase().replace(/[^a-z0-9]/g,'-') + '-' + Date.now();
+  const color = CAT_COLORS[categories.length % CAT_COLORS.length];
+  categories.push({id, name, color, order: categories.length});
+  saveCategories();
+  inp.value = '';
+  document.getElementById('add-cat-row').style.display = 'none';
+  renderCats();
+  renderCatSelect();
+}
+
+function deleteCategory(catId, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this category? Sessions will remain in history.')) return;
+  categories = categories.filter(c => c.id !== catId);
+  categories.forEach((c,i) => c.order = i);
+  saveCategories();
+  if (activeCategory === catId) { activeCategory = null; }
+  renderCats();
+  renderCatSelect();
+}
+
+function renderHist() {
+  const list = document.getElementById('hist-list');
+  const all = Object.entries(sessions)
+    .filter(([,s]) => !activeCategory || s.category === activeCategory)
+    .sort(([,a],[,b]) => b.updatedAt - a.updatedAt);
+  if (!all.length) { list.innerHTML = '<div class="no-hist">No sessions yet</div>'; return; }
+  list.innerHTML = '';
+  all.forEach(([sid, s]) => {
+    const cat = categories.find(c=>c.id===s.category);
+    const div = document.createElement('div');
+    div.className = 'hist-item' + (activeSessionId === sid ? ' active' : '');
+    div.innerHTML = `
+      <div class="hist-q">${s.firstQuestion || 'Session'}</div>
+      <div class="hist-meta">
+        ${cat ? `<span class="hist-cat-dot" style="background:${cat.color}"></span>${cat.name}` : ''}
+        <span>${new Date(s.updatedAt).toLocaleDateString()}</span>
+        ${s.hasAcknowledged ? '<span class="hist-ack">ACKNOWLEDGED</span>' : ''}
+      </div>
+    `;
+    div.onclick = () => loadSession(sid);
+    list.appendChild(div);
+  });
+}
+
+async function loadSession(sid) {
+  activeSessionId = sid;
+  const s = sessions[sid];
+  if (!s) return;
+  activeCategory = s.category;
+  conversationHistory = s.history || [];
+  renderCats();
+  renderHist();
+  document.getElementById('cat-select').value = s.category;
+
+  const log = document.getElementById('chat-log');
+  log.innerHTML = '';
+  document.getElementById('cat-header').style.display = 'flex';
+  const cat = categories.find(c=>c.id===s.category);
+  if(cat){
+    document.getElementById('cat-header-dot').style.background = cat.color;
+    document.getElementById('cat-header-name').textContent = cat.name;
+    document.getElementById('cat-header-count').textContent = `${countSessions(s.category)} sessions`;
+  }
+
+  (s.exchanges || []).forEach(ex => {
+    addUserBubble(ex.question);
+    addBotCard(ex, false);
+  });
+  updateMemCount();
+}
+
+function renderAck() {
+  const list = document.getElementById('ack-list');
+  if (!acknowledgedFacts.length) { list.innerHTML = '<div class="no-ack">None yet</div>'; return; }
+  list.innerHTML = acknowledgedFacts.slice(-10).reverse().map(f => `
+    <div class="ack-item">
+      <div class="ack-q">${f.question}</div>
+      <div class="ack-score">${f.score}% · ${new Date(f.savedAt).toLocaleDateString()}</div>
+    </div>
+  `).join('');
+  document.getElementById('ack-count').textContent = `${acknowledgedFacts.length} acknowledged`;
+}
+
+function showEmpty() {
+  const log = document.getElementById('chat-log');
+  const catId = document.getElementById('cat-select').value;
+  const cat = categories.find(c=>c.id===catId);
+  const catStarters = STARTERS;
+  log.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="empty-title">Ask anything. Get only the truth.</div>
+      <div class="empty-sub">Veritas scores every answer on documented evidence only — no spin, no bias. If you can prove it scores 85%+, it gets permanently acknowledged.</div>
+      <div class="starters">${catStarters.map(s=>`<button class="starter" onclick="useStarter(this)">${s}</button>`).join('')}</div>
+    </div>`;
+}
+
+function useStarter(btn) {
+  document.getElementById('q-input').value = btn.textContent;
+  ask();
+}
+
+function newSession() {
+  activeSessionId = null;
+  conversationHistory = [];
+  document.getElementById('mem-count').textContent = '0 exchanges';
+  showEmpty();
+}
+
+function updateMemCount() {
+  const count = Math.floor(conversationHistory.length / 2);
+  document.getElementById('mem-count').textContent = `${count} exchange${count!==1?'s':''}`;
+}
+
+function addUserBubble(q) {
+  const log = document.getElementById('chat-log');
+  const d = document.createElement('div');
+  d.className = 'msg-user';
+  d.innerHTML = `<div class="msg-user-bubble">${q}</div>`;
+  log.appendChild(d);
+  d.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function scoreColor(n) {
+  if(n>=80) return '#6ab88a';
+  if(n>=60) return '#e8a84a';
+  return '#d06060';
+}
+
+function verdictClass(v) {
+  const m={'CONFIRMED':'pill-confirmed','LIKELY':'pill-likely','DISPUTED':'pill-disputed','INSUFFICIENT EVIDENCE':'pill-insufficient','FALSE':'pill-false','OFFICIALLY CLAIMED':'pill-disputed'};
+  return m[v]||'pill-disputed';
+}
+
+function addBotCard(ex, scrollTo=true) {
+  const r = ex.result;
+  const score = Math.min(100, Math.max(0, Math.round(r.confidence_score||0)));
+  const col = scoreColor(score);
+  const isAck = ex.acknowledged;
+  const canAck = score >= 85 && !isAck;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-bot';
+  wrap.dataset.exid = ex.id;
+
+  let html = `<div class="bot-card${isAck?' acknowledged':''}">
+    <div class="bot-summary">${r.summary||''}</div>
+    <div class="bot-score-section">
+      <div class="score-header">
+        <span class="score-label">Confidence</span>
+        <span class="score-number" style="color:${col}">${score}%</span>
+      </div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${score}%;background:${col}"></div></div>
+      <div class="verdict-row">
+        <span class="verdict-pill ${verdictClass(r.verdict)}">${r.verdict||'UNKNOWN'}</span>
+        ${isAck?'<span class="ack-badge">ACKNOWLEDGED</span>':''}
+        ${r.bias_flag?`<span class="verdict-pill pill-disputed" title="${r.bias_flag}">BIAS FLAGGED</span>`:''}
+      </div>
+    </div>
+    <div class="bot-meta">
+      <div class="meta-item"><span class="meta-key">Sources</span><span class="meta-val">${r.corroborating_sources??'?'} independent</span></div>
+      <div class="meta-item"><span class="meta-key">Evidence</span><span class="meta-val">${(r.evidence_type||[]).join(', ')}</span></div>
+    </div>
+    <div class="bot-reasoning">${r.confidence_reasoning||''}</div>`;
+
+  if(r.bias_flag) html += `<div class="bot-disputes" style="color:var(--purple-light);background:rgba(106,74,154,0.07);border-color:rgba(106,74,154,0.15);">Bias detected: ${r.bias_flag}</div>`;
+  if(r.known_disputes && r.known_disputes!=='None') html += `<div class="bot-disputes">Disputes: ${r.known_disputes}</div>`;
+  if(r.memory_reference) html += `<div class="bot-memory">Cross-ref: ${r.memory_reference}</div>`;
+
+  html += `<div class="bot-actions">
+    ${canAck?`<button class="action-btn ack-btn" onclick="acknowledgeResult('${ex.id}')">Acknowledge (${score}% qualifies)</button>`:''}
+    ${isAck?'<span style="font-size:11px;color:var(--purple-light);font-family:var(--font-mono);">Permanently acknowledged</span>':''}
+    <button class="action-btn debate-btn" onclick="openDebate('${ex.id}')">Challenge / Debate</button>
+    <span class="ack-note">${score>=85&&!isAck?'Score ≥85% · eligible for acknowledgment':score>=85&&isAck?'':'Score below 85% threshold'}</span>
+  </div>
+  <div id="debate-${ex.id}"></div>
+  </div>`;
+
+  wrap.innerHTML = html;
+  document.getElementById('chat-log').appendChild(wrap);
+  if(scrollTo) wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function openDebate(exId) {
+  const zone = document.getElementById(`debate-${exId}`);
+  if(zone.innerHTML) { zone.innerHTML=''; return; }
+  zone.innerHTML = `
+    <div class="debate-row">
+      <div class="debate-label">Present your evidence or counter-argument:</div>
+      <div class="debate-input-row">
+        <input type="text" id="debate-inp-${exId}" placeholder="Cite your source or present documented evidence..." onkeydown="if(event.key==='Enter')submitDebate('${exId}')"/>
+        <button onclick="submitDebate('${exId}')">Submit</button>
+      </div>
+    </div>`;
+  document.getElementById(`debate-inp-${exId}`).focus();
+}
+
+async function submitDebate(exId) {
+  const inp = document.getElementById(`debate-inp-${exId}`);
+  const argument = inp.value.trim();
+  if (!argument) return;
+  inp.disabled = true;
+
+  const session = sessions[activeSessionId];
+  const ex = session?.exchanges?.find(e=>e.id===exId);
+  if (!ex) return;
+
+  const debatePrompt = `The user is challenging your previous assessment of: "${ex.question}"
+Your previous verdict was: ${ex.result.verdict} (${Math.round(ex.result.confidence_score)}%)
+User's counter-argument/evidence: "${argument}"
+
+Re-evaluate with this new information. If the user has presented credible primary evidence, adjust your score accordingly. Be willing to change your verdict if the evidence warrants it. Do NOT maintain a position simply due to prior commitment.
+
+Respond as the same JSON format as before.`;
+
+  conversationHistory.push({role:'user', content: debatePrompt});
+
+  const zone = document.getElementById(`debate-${exId}`);
+  zone.innerHTML = `<div class="thinking-bubble" style="margin:8px 12px;"><div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-text">Re-evaluating with your evidence...</span></div>`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYSTEM,messages:conversationHistory})
+    });
+    const data = await res.json();
+    const raw = data.content?.find(b=>b.type==='text')?.text||'{}';
+    conversationHistory.push({role:'assistant',content:raw});
+    const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const newScore = Math.round(r.confidence_score||0);
+
+    ex.result = r;
+    ex.debated = true;
+    saveSession(ex.question, ex, true);
+
+    zone.innerHTML = `<div style="padding:10px 12px;background:rgba(200,181,96,0.06);border-top:1px solid rgba(200,181,96,0.12);">
+      <div style="font-size:11px;color:var(--accent);font-family:var(--font-mono);margin-bottom:6px;">Re-evaluation after debate:</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;">${r.summary}</div>
+      <div style="margin-top:6px;font-family:var(--font-mono);font-size:12px;color:${scoreColor(newScore)};">New score: ${newScore}% · ${r.verdict}</div>
+      ${newScore>=85?`<button class="action-btn ack-btn" style="margin-top:8px;" onclick="acknowledgeResult('${exId}')">Score now ${newScore}% — Acknowledge</button>`:''}
+    </div>`;
+  } catch(e) {
+    zone.innerHTML = `<div class="error-bubble" style="margin:8px 12px;">Error: ${e.message}</div>`;
+  }
+}
+
+async function acknowledgeResult(exId) {
+  const session = sessions[activeSessionId];
+  const ex = session?.exchanges?.find(e=>e.id===exId);
+  if (!ex) return;
+  ex.acknowledged = true;
+  session.hasAcknowledged = true;
+
+  const fact = {
+    id: exId,
+    question: ex.question,
+    score: Math.round(ex.result.confidence_score),
+    verdict: ex.result.verdict,
+    summary: ex.result.summary,
+    savedAt: Date.now(),
+    category: activeCategory
+  };
+  acknowledgedFacts.push(fact);
+  await db.ref(`veritas/acknowledged/${exId}`).set(fact);
+  await db.ref(`veritas/sessions/${activeSessionId}`).set(session);
+
+  renderAck();
+  const wrap = document.querySelector(`[data-exid="${exId}"]`);
+  if(wrap) {
+    const card = wrap.querySelector('.bot-card');
+    if(card) card.classList.add('acknowledged');
+    const actions = wrap.querySelector('.bot-actions');
+    if(actions) actions.innerHTML = `<span style="font-size:11px;color:var(--purple-light);font-family:var(--font-mono);">Permanently acknowledged · saved to Firebase</span>`;
+    const vrow = wrap.querySelector('.verdict-row');
+    if(vrow && !vrow.querySelector('.ack-badge')) vrow.innerHTML += `<span class="ack-badge">ACKNOWLEDGED</span>`;
+  }
+}
+
+async function saveSession(question, newExchange, isUpdate=false) {
+  const catId = document.getElementById('cat-select').value;
+  if (!activeSessionId) {
+    activeSessionId = 'sess-' + Date.now();
+    sessions[activeSessionId] = {
+      id: activeSessionId,
+      category: catId,
+      firstQuestion: question,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      history: [],
+      exchanges: [],
+      hasAcknowledged: false
+    };
+  }
+  const sess = sessions[activeSessionId];
+  sess.updatedAt = Date.now();
+  sess.history = conversationHistory;
+  if (!isUpdate) {
+    sess.exchanges = sess.exchanges || [];
+    sess.exchanges.push(newExchange);
+  } else {
+    const idx = sess.exchanges.findIndex(e=>e.id===newExchange.id);
+    if(idx>=0) sess.exchanges[idx] = newExchange;
+  }
+  await db.ref(`veritas/sessions/${activeSessionId}`).set(sess);
+  renderHist();
+  const cat = categories.find(c=>c.id===catId);
+  if(cat) document.getElementById('cat-header-count').textContent = `${countSessions(catId)} sessions`;
+}
+
+async function ask() {
+  if (!anthropicKey) { alert('Anthropic API key not found in Firebase config/veritas_key'); return; }
+  const q = document.getElementById('q-input').value.trim();
+  if (!q) return;
+  document.getElementById('q-input').value = '';
+  document.getElementById('ask-btn').disabled = true;
+
+  const log = document.getElementById('chat-log');
+  if (log.querySelector('.empty-state')) log.innerHTML = '';
+
+  const catId = document.getElementById('cat-select').value;
+  activeCategory = catId;
+
+  const hdr = document.getElementById('cat-header');
+  hdr.style.display = 'flex';
+  const cat = categories.find(c=>c.id===catId);
+  if(cat){
+    document.getElementById('cat-header-dot').style.background = cat.color;
+    document.getElementById('cat-header-name').textContent = cat.name;
+  }
+
+  addUserBubble(q);
+
+  const thinkDiv = document.createElement('div');
+  thinkDiv.className = 'msg-bot';
+  thinkDiv.innerHTML = `<div class="thinking-bubble"><div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-text">Cross-referencing primary evidence...</span></div>`;
+  log.appendChild(thinkDiv);
+  thinkDiv.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  conversationHistory.push({role:'user',content:q});
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:SYSTEM,messages:conversationHistory})
+    });
+    const data = await res.json();
+    const raw = data.content?.find(b=>b.type==='text')?.text||'{}';
+    conversationHistory.push({role:'assistant',content:raw});
+    updateMemCount();
+
+    const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const exId = 'ex-' + Date.now();
+    const exchange = {id:exId, question:q, result:r, acknowledged:false, debated:false, timestamp:Date.now()};
+
+    thinkDiv.remove();
+    addBotCard(exchange);
+    await saveSession(q, exchange);
+    renderCats();
+
+  } catch(e) {
+    thinkDiv.innerHTML = `<div class="error-bubble">Error: ${e.message}</div>`;
+  }
+  document.getElementById('ask-btn').disabled = false;
+}
+
+document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==='Enter') ask(); });
+</script>
+</body>
+</html>
