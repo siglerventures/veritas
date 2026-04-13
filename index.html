@@ -252,7 +252,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
   <input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPW()"/>
   <button onclick="checkPW()">Enter</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.3</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.4</div>
 </div>
 
 <!-- APP -->
@@ -730,7 +730,20 @@ async function loadSession(sid) {
   const s = sessions[sid];
   if (!s) return;
   activeCategory = s.category;
-  conversationHistory = s.history || [];
+  // Restore full conversation history for context continuity
+  if (s.history && s.history.length > 0) {
+    conversationHistory = s.history;
+  } else if (s.exchanges && s.exchanges.length > 0) {
+    // Rebuild from exchanges if history missing
+    conversationHistory = [];
+    s.exchanges.forEach(ex => {
+      conversationHistory.push({role:'user', content: ex.question});
+      if (ex.rawResponse) conversationHistory.push({role:'assistant', content: ex.rawResponse});
+      else if (ex.result) conversationHistory.push({role:'assistant', content: JSON.stringify(ex.result)});
+    });
+  } else {
+    conversationHistory = [];
+  }
   renderCats();
   renderHist();
   document.getElementById('cat-select').value = s.category;
@@ -843,7 +856,17 @@ function verdictClass(v) {
 }
 
 function addBotCard(ex, scrollTo=true) {
-  const r = ex.result;
+  // Handle missing or malformed result gracefully
+  let r = ex.result;
+  if (!r || typeof r !== 'object') {
+    // Try to re-parse from rawResponse
+    if (ex.rawResponse) {
+      try { r = JSON.parse(ex.rawResponse.replace(/```json|```/g,'').trim()); }
+      catch(e) { r = {summary: ex.rawResponse, confidence_score: 0, verdict: 'UNKNOWN'}; }
+    } else {
+      r = {summary: 'Response not available', confidence_score: 0, verdict: 'UNKNOWN'};
+    }
+  }
   const score = Math.min(100, Math.max(0, Math.round(r.confidence_score||0)));
   const col = scoreColor(score);
   const isAck = ex.acknowledged;
@@ -1006,7 +1029,7 @@ async function saveSession(question, newExchange, isUpdate=false) {
   }
   const sess = sessions[activeSessionId];
   sess.updatedAt = Date.now();
-  sess.history = conversationHistory;
+  sess.history = [...conversationHistory]; // preserve full dialogue for context
   if (!isUpdate) {
     sess.exchanges = sess.exchanges || [];
     sess.exchanges.push(newExchange);
