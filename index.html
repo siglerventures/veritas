@@ -194,6 +194,51 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
 #ask-btn:disabled{background:var(--text3);color:var(--surface);cursor:not-allowed;}
 .input-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:8px;font-family:var(--font-mono);}
 .error-bubble{background:rgba(138,48,48,0.15);border:1px solid rgba(138,48,48,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--red-light);font-family:var(--font-mono);}
+
+/* CONTEXT MENU */
+.ctx-menu {
+  position: fixed;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 6px 0;
+  z-index: 9999;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  animation: fadeIn 0.1s ease;
+}
+.ctx-menu-title {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 14px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.ctx-item:hover { background: var(--surface3); color: var(--text); }
+.ctx-item .ctx-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ctx-item.ctx-danger { color: var(--red-light); }
+.ctx-item.ctx-danger:hover { background: rgba(139,48,48,0.2); }
+@keyframes fadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+/* DRAG GHOST */
+.hist-item.drag-over { border-color: var(--accent) !important; background: rgba(200,181,96,0.08) !important; }
+.hist-item[draggable=true] { cursor: grab; }
 </style>
 </head>
 <body>
@@ -205,7 +250,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
   <input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPW()"/>
   <button onclick="checkPW()">Enter</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.1</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.2</div>
 </div>
 
 <!-- APP -->
@@ -463,8 +508,21 @@ function renderCats() {
     div.addEventListener('click', () => selectCategory(cat.id));
     div.addEventListener('dragstart', e => { dragSrc = i; div.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
     div.addEventListener('dragend', () => div.classList.remove('dragging'));
-    div.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; });
-    div.addEventListener('drop', e => { e.preventDefault(); if(dragSrc===null||dragSrc===i) return; const moved=categories.splice(dragSrc,1)[0]; categories.splice(i,0,moved); categories.forEach((c,idx)=>c.order=idx); dragSrc=null; saveCategories(); renderCats(); renderCatSelect(); });
+    div.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; div.style.borderColor='var(--accent)'; });
+    div.addEventListener('dragleave', () => { div.style.borderColor=''; });
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      div.style.borderColor='';
+      // If dragging a history session onto a category — move it
+      if (dragSrcSid) { moveSessionToCategory(dragSrcSid, cat.id); return; }
+      // Otherwise reorder categories
+      if(dragSrc===null||dragSrc===i) return;
+      const moved=categories.splice(dragSrc,1)[0];
+      categories.splice(i,0,moved);
+      categories.forEach((c,idx)=>c.order=idx);
+      dragSrc=null;
+      saveCategories(); renderCats(); renderCatSelect();
+    });
     list.appendChild(div);
   });
 }
@@ -529,6 +587,95 @@ function deleteCategory(catId, e) {
   renderCatSelect();
 }
 
+// ── CONTEXT MENU ─────────────────────────────────────────
+let ctxMenu = null;
+let dragSrcSid = null;
+
+function removeCtxMenu() {
+  if (ctxMenu) { ctxMenu.remove(); ctxMenu = null; }
+}
+
+function showCtxMenu(e, sid) {
+  e.preventDefault();
+  e.stopPropagation();
+  removeCtxMenu();
+
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu';
+  ctxMenu = menu;
+
+  menu.innerHTML = '<div class="ctx-menu-title">Move to Category</div>';
+
+  categories.forEach(cat => {
+    const item = document.createElement('div');
+    item.className = 'ctx-item';
+    item.innerHTML = `<span class="ctx-dot" style="background:${cat.color}"></span>${cat.name}`;
+    item.onclick = () => { moveSessionToCategory(sid, cat.id); removeCtxMenu(); };
+    menu.appendChild(item);
+  });
+
+  // Divider + Delete
+  const sep = document.createElement('div');
+  sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
+  menu.appendChild(sep);
+
+  const del = document.createElement('div');
+  del.className = 'ctx-item ctx-danger';
+  del.innerHTML = '🗑 Delete Session';
+  del.onclick = () => { deleteSession(sid); removeCtxMenu(); };
+  menu.appendChild(del);
+
+  // Position menu
+  let x = e.clientX, y = e.clientY;
+  document.body.appendChild(menu);
+  const rect = menu.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth) x = window.innerWidth - rect.width - 8;
+  if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 8;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+}
+
+async function moveSessionToCategory(sid, catId) {
+  if (!sessions[sid]) return;
+  sessions[sid].category = catId;
+  sessions[sid].updatedAt = Date.now();
+  await db.ref('veritas/sessions/' + sid + '/category').set(catId);
+  await db.ref('veritas/sessions/' + sid + '/updatedAt').set(Date.now());
+  renderHist();
+  renderCats();
+  showToast('✅ Moved to ' + (categories.find(c=>c.id===catId)?.name || catId));
+}
+
+async function deleteSession(sid) {
+  if (!confirm('Delete this session?')) return;
+  if (activeSessionId === sid) {
+    activeSessionId = null;
+    conversationHistory = [];
+    showEmpty();
+  }
+  delete sessions[sid];
+  await db.ref('veritas/sessions/' + sid).remove();
+  renderHist();
+  showToast('🗑 Session deleted');
+}
+
+function showToast(msg) {
+  let t = document.getElementById('veritas-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'veritas-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--surface2);border:1px solid var(--accent2);color:var(--text);padding:8px 18px;border-radius:8px;font-size:13px;z-index:9999;transition:transform 0.3s ease;pointer-events:none';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.transform = 'translateX(-50%) translateY(100px)'; }, 2500);
+}
+
+document.addEventListener('click', removeCtxMenu);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') removeCtxMenu(); });
+
 function renderHist() {
   const list = document.getElementById('hist-list');
   const all = Object.entries(sessions)
@@ -540,6 +687,7 @@ function renderHist() {
     const cat = categories.find(c=>c.id===s.category);
     const div = document.createElement('div');
     div.className = 'hist-item' + (activeSessionId === sid ? ' active' : '');
+    div.draggable = true;
     div.innerHTML = `
       <div class="hist-q">${s.firstQuestion || 'Session'}</div>
       <div class="hist-meta">
@@ -548,7 +696,18 @@ function renderHist() {
         ${s.hasAcknowledged ? '<span class="hist-ack">ACKNOWLEDGED</span>' : ''}
       </div>
     `;
+    // Left click = load session
     div.onclick = () => loadSession(sid);
+    // Right click = context menu
+    div.addEventListener('contextmenu', e => showCtxMenu(e, sid));
+    // Drag to category
+    div.addEventListener('dragstart', e => {
+      dragSrcSid = sid;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', sid);
+      setTimeout(() => div.style.opacity = '0.4', 0);
+    });
+    div.addEventListener('dragend', () => { div.style.opacity = ''; dragSrcSid = null; });
     list.appendChild(div);
   });
 }
