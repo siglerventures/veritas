@@ -205,6 +205,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
   <input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPW()"/>
   <button onclick="checkPW()">Enter</button>
   <div id="pw-err"></div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.1</div>
 </div>
 
 <!-- APP -->
@@ -390,18 +391,12 @@ Respond ONLY as valid JSON (no markdown, no preamble):
 async function checkPW() {
   const v = document.getElementById('pw-input').value;
   if (!v) return;
-  // Ensure anonymous auth is established first
+  // Try to fetch password from Firebase
   try {
-    if (!auth.currentUser) await auth.signInAnonymously();
-    // Wait for auth to be fully confirmed
-    await new Promise(resolve => {
-      const unsub = auth.onAuthStateChanged(user => {
-        if (user) { unsub(); resolve(); }
-      });
-    });
+    await auth.signInAnonymously();
     const snap = await db.ref('config/veritas_password').get();
     if (snap.exists()) PASSWORD = snap.val();
-  } catch(e) { console.warn('Using default password:', e.message); }
+  } catch(e) { console.warn('Using default password'); }
   if (v === PASSWORD) {
     document.getElementById('pw-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
@@ -413,8 +408,7 @@ async function checkPW() {
 document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') checkPW(); });
 
 async function initApp() {
-  // Auth already established in checkPW — just ensure user exists
-  if (!auth.currentUser) await auth.signInAnonymously();
+  await auth.signInAnonymously();
   // Load API key
   try {
     const snap = await db.ref('config/veritas_key').get();
@@ -741,7 +735,7 @@ Respond as the same JSON format as before.`;
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYSTEM,messages:conversationHistory})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:SYSTEM,messages:conversationHistory})
     });
     const data = await res.json();
     const raw = data.content?.find(b=>b.type==='text')?.text||'{}';
@@ -862,7 +856,7 @@ async function ask() {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:SYSTEM,messages:conversationHistory})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,system:SYSTEM,messages:conversationHistory})
     });
     const data = await res.json();
     const raw = data.content?.find(b=>b.type==='text')?.text||'{}';
