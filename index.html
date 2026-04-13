@@ -390,12 +390,18 @@ Respond ONLY as valid JSON (no markdown, no preamble):
 async function checkPW() {
   const v = document.getElementById('pw-input').value;
   if (!v) return;
-  // Try to fetch password from Firebase
+  // Ensure anonymous auth is established first
   try {
-    await auth.signInAnonymously();
+    if (!auth.currentUser) await auth.signInAnonymously();
+    // Wait for auth to be fully confirmed
+    await new Promise(resolve => {
+      const unsub = auth.onAuthStateChanged(user => {
+        if (user) { unsub(); resolve(); }
+      });
+    });
     const snap = await db.ref('config/veritas_password').get();
     if (snap.exists()) PASSWORD = snap.val();
-  } catch(e) { console.warn('Using default password'); }
+  } catch(e) { console.warn('Using default password:', e.message); }
   if (v === PASSWORD) {
     document.getElementById('pw-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
@@ -407,7 +413,8 @@ async function checkPW() {
 document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') checkPW(); });
 
 async function initApp() {
-  await auth.signInAnonymously();
+  // Auth already established in checkPW — just ensure user exists
+  if (!auth.currentUser) await auth.signInAnonymously();
   // Load API key
   try {
     const snap = await db.ref('config/veritas_key').get();
