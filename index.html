@@ -252,7 +252,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
   <input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPW()"/>
   <button onclick="checkPW()">Enter</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.5</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.9</div>
 </div>
 
 <!-- APP -->
@@ -336,15 +336,15 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-let PASSWORD = '1002'; // Will be overridden by Firebase
+let PASSWORD = ''; // Fetched from Firebase at login
 const FB_CONFIG = {
   apiKey: "AIzaSyCrW9Lrf7fWVqRxKqsnuPK0tL6UYbd_qds",
   authDomain: "philinity-893d2.firebaseapp.com",
   databaseURL: "https://philinity-893d2-default-rtdb.firebaseio.com",
   projectId: "philinity-893d2",
-  storageBucket: "philinity-893d2.appspot.com",
-  messagingSenderId: "442870133414",
-  appId: "1:442870133414:web:placeholder"
+  storageBucket: "philinity-893d2.firebasestorage.app",
+  messagingSenderId: "443020781676",
+  appId: "1:443020781676:web:614ec91c9ba33076eb9049"
 };
 
 firebase.initializeApp(FB_CONFIG);
@@ -446,6 +446,25 @@ Respond ONLY as valid JSON (no markdown, no preamble):
   "memory_reference": "If prior conversation context was used, describe briefly. Otherwise null."
 }`;
 
+const VERITAS_AUTH_KEY = 'veritas_auth_v1';
+const VERITAS_AUTH_EXPIRY_DAYS = 30;
+
+function isVeritasAuthValid() {
+  try {
+    const stored = localStorage.getItem(VERITAS_AUTH_KEY);
+    if (!stored) return false;
+    const data = JSON.parse(stored);
+    return (Date.now() - data.ts) < (VERITAS_AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+  } catch(e) { return false; }
+}
+
+// Check auth on load
+if (isVeritasAuthValid()) {
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.addEventListener('DOMContentLoaded', () => initApp());
+}
+
 async function checkPW() {
   const v = document.getElementById('pw-input').value;
   if (!v) return;
@@ -456,7 +475,7 @@ async function checkPW() {
     if (snap.exists()) PASSWORD = snap.val();
   } catch(e) { console.warn('Using default password'); }
   if (v === PASSWORD) {
-    localStorage.setItem('veritas_auth_v1', JSON.stringify({ ts: Date.now() }));
+    localStorage.setItem(VERITAS_AUTH_KEY, JSON.stringify({ ts: Date.now() }));
     document.getElementById('pw-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     initApp();
