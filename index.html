@@ -458,12 +458,24 @@ function isVeritasAuthValid() {
   } catch(e) { return false; }
 }
 
-// Check auth on load
-if (isVeritasAuthValid()) {
-  document.getElementById('pw-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.addEventListener('DOMContentLoaded', () => initApp());
-}
+// Check auth on load — wait for Firebase SDK then attempt auto-login
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    if (isVeritasAuthValid()) {
+      try {
+        document.getElementById('pw-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        initApp();
+      } catch(e) {
+        // If auto-login fails, fall back to showing login screen
+        localStorage.removeItem(VERITAS_AUTH_KEY);
+        document.getElementById('pw-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+        console.warn('Auto-login failed, showing login screen:', e);
+      }
+    }
+  }, 500);
+});
 
 async function checkPW() {
   const v = document.getElementById('pw-input').value;
