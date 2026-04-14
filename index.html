@@ -252,7 +252,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
   <input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPW()"/>
   <button onclick="checkPW()">Enter</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.6</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.7</div>
 </div>
 
 <!-- APP -->
@@ -457,25 +457,6 @@ function isVeritasAuthValid() {
     return (Date.now() - data.ts) < (VERITAS_AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
   } catch(e) { return false; }
 }
-
-// Check auth on load — wait for Firebase SDK then attempt auto-login
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    if (isVeritasAuthValid()) {
-      try {
-        document.getElementById('pw-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'flex';
-        initApp();
-      } catch(e) {
-        // If auto-login fails, fall back to showing login screen
-        localStorage.removeItem(VERITAS_AUTH_KEY);
-        document.getElementById('pw-screen').style.display = 'flex';
-        document.getElementById('app').style.display = 'none';
-        console.warn('Auto-login failed, showing login screen:', e);
-      }
-    }
-  }, 500);
-});
 
 async function checkPW() {
   const v = document.getElementById('pw-input').value;
@@ -1134,7 +1115,7 @@ async function ask() {
 
 document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==='Enter') ask(); });
 
-// ── DATA MANAGER ─────────────────────────────────────────────────────────
+// ── DATA MANAGER ──────────────────────────────────────────────────────────
 function openDataModal() {
   document.getElementById('veritas-data-modal').style.display = 'flex';
 }
@@ -1146,8 +1127,7 @@ function closeDataModal() {
 async function veritasBackup() {
   const status = document.getElementById('veritas-data-status');
   try {
-    // Get fresh data from Firebase
-    await firebase.auth().signInAnonymously();
+    await auth.signInAnonymously();
     const [sessSnap, catSnap, ackSnap] = await Promise.all([
       db.ref('veritas/sessions').get(),
       db.ref('veritas/categories').get(),
@@ -1167,8 +1147,7 @@ async function veritasBackup() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
     const sessionCount = Object.keys(backup.sessions).length;
-    const catCount = Object.keys(backup.categories).length;
-    status.innerHTML = '<span style="color:#6a9c7f">✅ Backed up ' + sessionCount + ' sessions, ' + catCount + ' categories</span>';
+    status.innerHTML = '<span style="color:#6a9c7f">✅ Backed up ' + sessionCount + ' sessions</span>';
   } catch(e) {
     status.innerHTML = '<span style="color:#c46a5a">❌ Error: ' + e.message + '</span>';
   }
@@ -1184,24 +1163,18 @@ function veritasRestore(event) {
   reader.onload = async function(e) {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.sessions && !data.categories) {
-        status.innerHTML = '<span style="color:#c46a5a">❌ Invalid backup file</span>';
-        return;
-      }
+      if (!data.sessions && !data.categories) { status.innerHTML = '<span style="color:#c46a5a">❌ Invalid backup file</span>'; return; }
       const sessionCount = Object.keys(data.sessions || {}).length;
       if (!confirm('Restore ' + sessionCount + ' sessions from "' + file.name + '"?
 
-This will overwrite all current Veritas data.')) {
-        status.innerHTML = '';
-        return;
-      }
-      await firebase.auth().signInAnonymously();
+This will overwrite all current Veritas data.')) { status.innerHTML = ''; return; }
+      await auth.signInAnonymously();
       const updates = {};
       if (data.sessions) updates['veritas/sessions'] = data.sessions;
       if (data.categories) updates['veritas/categories'] = data.categories;
       if (data.acknowledged) updates['veritas/acknowledged'] = data.acknowledged;
       await db.ref().update(updates);
-      status.innerHTML = '<span style="color:#6a9c7f">✅ Restored ' + sessionCount + ' sessions from ' + file.name + ' — reload to see changes</span>';
+      status.innerHTML = '<span style="color:#6a9c7f">✅ Restored ' + sessionCount + ' sessions — reload page to see changes</span>';
     } catch(err) {
       status.innerHTML = '<span style="color:#c46a5a">❌ Error: ' + err.message + '</span>';
     }
@@ -1243,8 +1216,8 @@ This will overwrite all current Veritas data.')) {
 </div>
 
 <!-- FOOTER -->
-<div style="text-align:center;padding:8px 0;font-size:11px;color:#4a4845;">
-  Veritas v4.6 · <span onclick="openDataModal()" style="cursor:pointer;color:#888;">📦 Data</span>
+<div style="text-align:center;padding:8px 0 16px;font-size:11px;color:#4a4845;">
+  Veritas v4.7 · <span onclick="openDataModal()" style="cursor:pointer;color:#888;">📦 Data</span>
 </div>
 
 </body>
