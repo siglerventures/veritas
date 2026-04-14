@@ -252,7 +252,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
   <input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPW()"/>
   <button onclick="checkPW()">Enter</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.7</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Version 4.5</div>
 </div>
 
 <!-- APP -->
@@ -446,18 +446,6 @@ Respond ONLY as valid JSON (no markdown, no preamble):
   "memory_reference": "If prior conversation context was used, describe briefly. Otherwise null."
 }`;
 
-const VERITAS_AUTH_KEY = 'veritas_auth_v1';
-const VERITAS_AUTH_EXPIRY_DAYS = 30;
-
-function isVeritasAuthValid() {
-  try {
-    const stored = localStorage.getItem(VERITAS_AUTH_KEY);
-    if (!stored) return false;
-    const data = JSON.parse(stored);
-    return (Date.now() - data.ts) < (VERITAS_AUTH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-  } catch(e) { return false; }
-}
-
 async function checkPW() {
   const v = document.getElementById('pw-input').value;
   if (!v) return;
@@ -468,7 +456,7 @@ async function checkPW() {
     if (snap.exists()) PASSWORD = snap.val();
   } catch(e) { console.warn('Using default password'); }
   if (v === PASSWORD) {
-    localStorage.setItem(VERITAS_AUTH_KEY, JSON.stringify({ ts: Date.now() }));
+    localStorage.setItem('veritas_auth_v1', JSON.stringify({ ts: Date.now() }));
     document.getElementById('pw-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     initApp();
@@ -1114,111 +1102,6 @@ async function ask() {
 }
 
 document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==='Enter') ask(); });
-
-// ── DATA MANAGER ──────────────────────────────────────────────────────────
-function openDataModal() {
-  document.getElementById('veritas-data-modal').style.display = 'flex';
-}
-function closeDataModal() {
-  document.getElementById('veritas-data-modal').style.display = 'none';
-  document.getElementById('veritas-data-status').innerHTML = '';
-}
-
-async function veritasBackup() {
-  const status = document.getElementById('veritas-data-status');
-  try {
-    await auth.signInAnonymously();
-    const [sessSnap, catSnap, ackSnap] = await Promise.all([
-      db.ref('veritas/sessions').get(),
-      db.ref('veritas/categories').get(),
-      db.ref('veritas/acknowledged').get()
-    ]);
-    const backup = {
-      version: 'veritas-v1',
-      exportedAt: new Date().toISOString(),
-      sessions: sessSnap.exists() ? sessSnap.val() : {},
-      categories: catSnap.exists() ? catSnap.val() : {},
-      acknowledged: ackSnap.exists() ? ackSnap.val() : {}
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'veritas-backup-' + new Date().toISOString().slice(0,10) + '.json';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
-    const sessionCount = Object.keys(backup.sessions).length;
-    status.innerHTML = '<span style="color:#6a9c7f">✅ Backed up ' + sessionCount + ' sessions</span>';
-  } catch(e) {
-    status.innerHTML = '<span style="color:#c46a5a">❌ Error: ' + e.message + '</span>';
-  }
-}
-
-function veritasRestore(event) {
-  const file = event && event.target && event.target.files && event.target.files[0];
-  if (!file) return;
-  document.getElementById('veritas-restore-filename').textContent = file.name;
-  const status = document.getElementById('veritas-data-status');
-  status.innerHTML = '<span style="color:#888">⏳ Reading file...</span>';
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!data.sessions && !data.categories) { status.innerHTML = '<span style="color:#c46a5a">❌ Invalid backup file</span>'; return; }
-      const sessionCount = Object.keys(data.sessions || {}).length;
-      if (!confirm('Restore ' + sessionCount + ' sessions from "' + file.name + '"?
-
-This will overwrite all current Veritas data.')) { status.innerHTML = ''; return; }
-      await auth.signInAnonymously();
-      const updates = {};
-      if (data.sessions) updates['veritas/sessions'] = data.sessions;
-      if (data.categories) updates['veritas/categories'] = data.categories;
-      if (data.acknowledged) updates['veritas/acknowledged'] = data.acknowledged;
-      await db.ref().update(updates);
-      status.innerHTML = '<span style="color:#6a9c7f">✅ Restored ' + sessionCount + ' sessions — reload page to see changes</span>';
-    } catch(err) {
-      status.innerHTML = '<span style="color:#c46a5a">❌ Error: ' + err.message + '</span>';
-    }
-  };
-  reader.readAsText(file);
-  event.target.value = '';
-}
 </script>
-
-<!-- DATA MANAGER MODAL -->
-<div id="veritas-data-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(4px);">
-  <div style="background:#1a1612;border:1px solid #3a3530;border-radius:16px;width:100%;max-width:480px;padding:28px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-    <button onclick="closeDataModal()" style="position:absolute;top:14px;right:14px;background:#2a2520;border:1px solid #3a3530;color:#888;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px;">✕</button>
-    <div style="font-size:20px;font-weight:700;color:#e8e4dc;margin-bottom:4px;">📦 Veritas Data Manager</div>
-    <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Backup · Restore</div>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-      <div style="background:#111;border:1px solid #2a2520;border-radius:10px;padding:16px;">
-        <div style="font-size:14px;font-weight:600;color:#e8e4dc;margin-bottom:3px;">📦 Full Backup (JSON)</div>
-        <div style="font-size:12px;color:#888;margin-bottom:12px;">Download all sessions, categories, and acknowledged facts</div>
-        <button onclick="veritasBackup()" style="background:#c9a96e;color:#0a0a0c;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;">⬇️ Download Backup</button>
-      </div>
-      <div style="background:#111;border:1px solid #2a2520;border-radius:10px;padding:16px;">
-        <div style="font-size:14px;font-weight:600;color:#e8e4dc;margin-bottom:3px;">♻️ Restore from Backup</div>
-        <div style="font-size:12px;color:#888;margin-bottom:10px;">Select a veritas-backup-*.json file to restore</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <label style="background:#c9a96e;color:#0a0a0c;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;">
-            📂 Choose Backup File
-            <input type="file" accept=".json" style="display:none" onchange="veritasRestore(event)">
-          </label>
-          <span id="veritas-restore-filename" style="font-size:11px;color:#666;font-family:monospace;">No file selected</span>
-        </div>
-      </div>
-    </div>
-    <div id="veritas-data-status" style="font-size:12px;color:#888;font-family:monospace;line-height:1.8;min-height:20px;"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #2a2520;">
-      <button onclick="closeDataModal()" style="background:#2a2520;color:#888;border:1px solid #3a3530;padding:8px 20px;border-radius:8px;font-size:13px;cursor:pointer;">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- FOOTER -->
-<div style="text-align:center;padding:8px 0 16px;font-size:11px;color:#4a4845;">
-  Veritas v4.7 · <span onclick="openDataModal()" style="cursor:pointer;color:#888;">📦 Data</span>
-</div>
-
 </body>
 </html>
