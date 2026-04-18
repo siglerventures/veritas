@@ -38,7 +38,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 /* LAYOUT */
 #app{display:none;height:100vh;flex-direction:column;}
 header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:12px;}
-.logo{display:flex;align-items:baseline;gap:10px;}
+.logo{display:flex;align-items:baseline;gap:10px;cursor:pointer;transition:opacity 0.15s;}
+.logo:hover{opacity:0.75;}
 .logo-word{font-family:var(--font-display);font-size:24px;color:var(--accent);}
 .logo-tag{font-size:10px;font-weight:300;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;}
 .header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -47,6 +48,14 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
 .hbtn:hover{color:var(--text);border-color:var(--border2);}
 .hbtn.accent{background:var(--accent);color:#0a0a0b;border-color:var(--accent);font-weight:500;}
 .hbtn.accent:hover{background:var(--accent3);}
+.hbtn.export{color:var(--green-light);border-color:rgba(58,125,90,0.4);}
+.hbtn.export:hover{background:rgba(58,125,90,0.12);color:var(--green-light);}
+.hbtn.import{color:var(--blue-light);border-color:rgba(42,74,138,0.4);}
+.hbtn.import:hover{background:rgba(42,74,138,0.12);color:var(--blue-light);}
+
+/* FOOTER */
+footer{padding:8px 24px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:0.12em;}
+footer .rev-pill{color:var(--accent2);}
 
 /* BODY */
 #body{display:flex;flex:1;overflow:hidden;}
@@ -218,13 +227,13 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
   <div style="font-size:13px;color:var(--text3);font-family:var(--font-mono);">Evidence Intelligence</div>
   <button onclick="googleSignIn()">Sign in with Google</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.1</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.3</div>
 </div>
 
 <!-- APP -->
 <div id="app">
   <header>
-    <div class="logo">
+    <div class="logo" onclick="goHome()" title="Return to main page">
       <span class="logo-word">Veritas</span>
       <span class="logo-tag">Evidence Intelligence</span>
     </div>
@@ -232,6 +241,10 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
       <span class="hbadge" id="mem-count">0 exchanges</span>
       <span class="hbadge" id="ack-count" style="color:var(--purple-light);">0 acknowledged</span>
       <button class="hbtn" onclick="newSession()">New session</button>
+      <button class="hbtn export" onclick="exportData()" title="Download all Veritas data as JSON">⬇ Export</button>
+      <button class="hbtn import" onclick="document.getElementById('veritas-import-input').click()" title="Restore Veritas data from a JSON backup">⬆ Import</button>
+      <input type="file" id="veritas-import-input" accept=".json" style="display:none" onchange="importData(event)"/>
+      <button class="hbtn" onclick="signOut()" title="Sign out">Sign out</button>
     </div>
   </header>
 
@@ -293,6 +306,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
       </div>
     </div>
   </div>
+
+  <footer>Philinity <span class="rev-pill">© Rev 5.3</span></footer>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -356,6 +371,107 @@ auth.onAuthStateChanged(user => {
     initApp();
   }
 });
+
+// ── NAVIGATION & SIGN OUT ──
+function goHome() {
+  activeCategory = null;
+  activeSessionId = null;
+  conversationHistory = [];
+  document.getElementById('mem-count').textContent = '0 exchanges';
+  document.getElementById('session-status-bar').style.display = 'none';
+  document.getElementById('cat-header').style.display = 'none';
+  document.getElementById('cat-select').selectedIndex = 0;
+  if (appInitialized) {
+    renderCats();
+    renderHist();
+  }
+  showEmpty();
+}
+
+async function signOut() {
+  if (!confirm('Sign out of Veritas?')) return;
+  try {
+    await firebase.auth().signOut();
+    // Reset app state so the next user starts fresh
+    categories = [];
+    sessions = {};
+    acknowledgedFacts = [];
+    activeCategory = null;
+    activeSessionId = null;
+    conversationHistory = [];
+    appInitialized = false;
+    // Flip UI back to sign-in screen
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('pw-screen').style.display = 'flex';
+    document.getElementById('pw-err').textContent = '';
+  } catch(e) {
+    console.error('Sign out failed:', e);
+    alert('Sign out failed: ' + e.message);
+  }
+}
+
+// ── EXPORT / IMPORT ──
+async function exportData() {
+  try {
+    const snap = await db.ref('veritas').get();
+    if (!snap.exists()) {
+      alert('No Veritas data to export yet.');
+      return;
+    }
+    const payload = {
+      app: 'veritas',
+      version: 'Rev 5.3',
+      exportedAt: new Date().toISOString(),
+      data: snap.val()
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'veritas-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast('✅ Backup downloaded');
+  } catch(e) {
+    console.error('Export failed:', e);
+    alert('Export failed: ' + e.message);
+  }
+}
+
+function importData(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      // Accept two shapes: {app,version,data} wrapper OR raw veritas subtree {categories,sessions,acknowledged}
+      let payload = parsed.data ? parsed.data : parsed;
+      // Sanity check — must contain at least one known Veritas key
+      const hasKnownKey = payload.categories || payload.sessions || payload.acknowledged;
+      if (!hasKnownKey) {
+        alert('This file does not look like a Veritas backup. Import cancelled.');
+        event.target.value = '';
+        return;
+      }
+      const note = parsed.exportedAt ? '\n\nBackup date: ' + new Date(parsed.exportedAt).toLocaleString() : '';
+      if (!confirm('⚠️ This will OVERWRITE all Veritas data in Firebase with the contents of this file.' + note + '\n\nContinue?')) {
+        event.target.value = '';
+        return;
+      }
+      await db.ref('veritas').set(payload);
+      showToast('✅ Import complete — reloading...');
+      setTimeout(() => location.reload(), 1200);
+    } catch(err) {
+      console.error('Import failed:', err);
+      alert('Import failed: ' + err.message);
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
 
 // ── STATE ──
 let categories = [];
@@ -1066,7 +1182,7 @@ async function ask() {
 document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==='Enter') ask(); });
 
 // ============================================================
-// Veritas — Evidence Intelligence © Rev 5.1
+// Veritas — Evidence Intelligence © Rev 5.3
 // ------------------------------------------------------------
 // Rev 5.0  Password-gated (legacy)
 // Rev 5.1  Clean rewrite: Google Sign-In + UID whitelist,
@@ -1075,6 +1191,12 @@ document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==
 //          XSS stripping on all Firebase-sourced rendered content,
 //          removed all localStorage auth persistence + password code,
 //          fixed duplicated DOCTYPE corruption from prior edit
+// Rev 5.2  Clickable logo returns to main page (goHome),
+//          Sign Out button in header (firebase.auth().signOut + UI reset)
+// Rev 5.3  Philinity © Rev footer pinned below app (visible once logged in),
+//          ⬇ Export / ⬆ Import buttons in header matching Task Board pattern:
+//          Export downloads veritas-backup-YYYY-MM-DD.json (wrapped w/ version),
+//          Import accepts both wrapped & raw shapes, confirms before overwrite
 // ============================================================
 </script>
 </body>
