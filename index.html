@@ -217,6 +217,30 @@ footer .rev-pill{color:var(--accent2);}
 
 .hist-item.drag-over{border-color:var(--accent)!important;background:rgba(200,181,96,0.08)!important;}
 .hist-item[draggable=true]{cursor:grab;}
+
+/* ── DATA MANAGER MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:520px;padding:28px;position:relative;animation:slideUp 0.25s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;font-family:var(--font-body);}
+.modal-close:hover{border-color:var(--accent2);color:var(--text);}
+.modal-title{font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:4px;}
+.modal-subtitle{font-size:11px;color:var(--accent2);margin-bottom:18px;text-transform:uppercase;letter-spacing:0.15em;font-family:var(--font-mono);}
+.dm-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.dm-card.accent{background:linear-gradient(135deg,rgba(200,181,96,0.1),rgba(200,181,96,0.05));border-color:rgba(200,181,96,0.3);}
+.dm-card-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;}
+.dm-card.accent .dm-card-title{color:var(--accent);}
+.dm-card-desc{font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5;}
+.dm-btn{background:var(--accent);color:#0a0a0b;border:none;padding:7px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);display:inline-flex;align-items:center;gap:6px;}
+.dm-btn:hover{background:var(--accent3);}
+.dm-file-label{background:var(--accent);color:#0a0a0b;border:none;padding:7px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);display:inline-flex;align-items:center;gap:6px;}
+.dm-file-label:hover{background:var(--accent3);}
+.dm-filename{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-left:8px;}
+
+/* Footer link */
+footer a.footer-link{color:var(--text3);cursor:pointer;font-size:10px;text-decoration:none;margin-left:8px;transition:color 0.15s;letter-spacing:0;}
+footer a.footer-link:hover{color:var(--accent);}
 </style>
 </head>
 <body>
@@ -227,7 +251,7 @@ footer .rev-pill{color:var(--accent2);}
   <div style="font-size:13px;color:var(--text3);font-family:var(--font-mono);">Evidence Intelligence</div>
   <button onclick="googleSignIn()">Sign in with Google</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.3</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.4</div>
 </div>
 
 <!-- APP -->
@@ -241,9 +265,6 @@ footer .rev-pill{color:var(--accent2);}
       <span class="hbadge" id="mem-count">0 exchanges</span>
       <span class="hbadge" id="ack-count" style="color:var(--purple-light);">0 acknowledged</span>
       <button class="hbtn" onclick="newSession()">New session</button>
-      <button class="hbtn export" onclick="exportData()" title="Download all Veritas data as JSON">⬇ Export</button>
-      <button class="hbtn import" onclick="document.getElementById('veritas-import-input').click()" title="Restore Veritas data from a JSON backup">⬆ Import</button>
-      <input type="file" id="veritas-import-input" accept=".json" style="display:none" onchange="importData(event)"/>
       <button class="hbtn" onclick="signOut()" title="Sign out">Sign out</button>
     </div>
   </header>
@@ -307,7 +328,49 @@ footer .rev-pill{color:var(--accent2);}
     </div>
   </div>
 
-  <footer>Philinity <span class="rev-pill">© Rev 5.3</span></footer>
+  <footer>Philinity <span class="rev-pill">© Rev 5.4</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a></footer>
+</div>
+
+<!-- DATA MANAGER MODAL -->
+<div class="modal-overlay" id="dataModal" onclick="if(event.target===this) closeDataModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDataModal()">✕</button>
+    <div class="modal-title">📦 Data Manager</div>
+    <div class="modal-subtitle">Backup · Restore · Import</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <!-- Full JSON Backup -->
+      <div class="dm-card accent">
+        <div class="dm-card-title">📦 Full Backup (JSON)</div>
+        <div class="dm-card-desc">Download all Veritas data as JSON — categories, sessions, and acknowledged facts. Use to restore later.</div>
+        <button class="dm-btn" onclick="exportData()">⬇ Download Backup</button>
+      </div>
+
+      <!-- Restore from JSON (overwrite) -->
+      <div class="dm-card">
+        <div class="dm-card-title">♻ Restore from Backup</div>
+        <div class="dm-card-desc">Select a veritas-backup-*.json file to restore. This OVERWRITES all current Veritas data.</div>
+        <label class="dm-file-label">
+          📂 Choose Backup File
+          <input type="file" id="veritas-restore-input" accept=".json" style="display:none" onchange="restoreData(event)"/>
+        </label>
+        <span class="dm-filename" id="restore-filename">No file selected</span>
+      </div>
+
+      <!-- Import Merge -->
+      <div class="dm-card">
+        <div class="dm-card-title">📥 Import Data (Merge)</div>
+        <div class="dm-card-desc">Import a JSON backup as a merge — adds new sessions and categories and updates matching IDs without wiping existing data.</div>
+        <label class="dm-file-label">
+          📂 Choose JSON File
+          <input type="file" id="veritas-merge-input" accept=".json" style="display:none" onchange="mergeImportData(event)"/>
+        </label>
+        <span class="dm-filename" id="merge-filename">No file selected</span>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -410,7 +473,20 @@ async function signOut() {
   }
 }
 
-// ── EXPORT / IMPORT ──
+// ── EXPORT / IMPORT (Data Manager) ──
+function openDataModal() {
+  document.getElementById('dataModal').classList.add('open');
+  // Reset filename displays each open
+  const r = document.getElementById('restore-filename');
+  const m = document.getElementById('merge-filename');
+  if (r) r.textContent = 'No file selected';
+  if (m) m.textContent = 'No file selected';
+}
+
+function closeDataModal() {
+  document.getElementById('dataModal').classList.remove('open');
+}
+
 async function exportData() {
   try {
     const snap = await db.ref('veritas').get();
@@ -420,7 +496,7 @@ async function exportData() {
     }
     const payload = {
       app: 'veritas',
-      version: 'Rev 5.3',
+      version: 'Rev 5.4',
       exportedAt: new Date().toISOString(),
       data: snap.val()
     };
@@ -439,33 +515,90 @@ async function exportData() {
   }
 }
 
-function importData(event) {
+// Full overwrite restore (wipe + write)
+function restoreData(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
+  const fnameEl = document.getElementById('restore-filename');
+  if (fnameEl) fnameEl.textContent = file.name;
+
   const reader = new FileReader();
   reader.onload = async (e) => {
     try {
       const parsed = JSON.parse(e.target.result);
-      // Accept two shapes: {app,version,data} wrapper OR raw veritas subtree {categories,sessions,acknowledged}
+      // Accept two shapes: {app,version,data} wrapper OR raw {categories,sessions,acknowledged}
       let payload = parsed.data ? parsed.data : parsed;
-      // Sanity check — must contain at least one known Veritas key
+      const hasKnownKey = payload.categories || payload.sessions || payload.acknowledged;
+      if (!hasKnownKey) {
+        alert('This file does not look like a Veritas backup. Restore cancelled.');
+        event.target.value = '';
+        return;
+      }
+      const note = parsed.exportedAt ? '\n\nBackup date: ' + new Date(parsed.exportedAt).toLocaleString() : '';
+      if (!confirm('⚠️ RESTORE will OVERWRITE all Veritas data in Firebase with the contents of this file.' + note + '\n\nContinue?')) {
+        event.target.value = '';
+        return;
+      }
+      await db.ref('veritas').set(payload);
+      showToast('✅ Restore complete — reloading...');
+      setTimeout(() => location.reload(), 1200);
+    } catch(err) {
+      console.error('Restore failed:', err);
+      alert('Restore failed: ' + err.message);
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Merge import — adds/updates without wiping
+function mergeImportData(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const fnameEl = document.getElementById('merge-filename');
+  if (fnameEl) fnameEl.textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      let payload = parsed.data ? parsed.data : parsed;
       const hasKnownKey = payload.categories || payload.sessions || payload.acknowledged;
       if (!hasKnownKey) {
         alert('This file does not look like a Veritas backup. Import cancelled.');
         event.target.value = '';
         return;
       }
-      const note = parsed.exportedAt ? '\n\nBackup date: ' + new Date(parsed.exportedAt).toLocaleString() : '';
-      if (!confirm('⚠️ This will OVERWRITE all Veritas data in Firebase with the contents of this file.' + note + '\n\nContinue?')) {
+
+      // Count what will be merged
+      const catCount = payload.categories ? Object.keys(payload.categories).length : 0;
+      const sessCount = payload.sessions ? Object.keys(payload.sessions).length : 0;
+      const ackCount = payload.acknowledged ? Object.keys(payload.acknowledged).length : 0;
+      const note = parsed.exportedAt ? '\nBackup date: ' + new Date(parsed.exportedAt).toLocaleString() : '';
+
+      if (!confirm('📥 MERGE IMPORT\n\nThis will ADD or UPDATE:\n• ' + catCount + ' categories\n• ' + sessCount + ' sessions\n• ' + ackCount + ' acknowledged facts' + note + '\n\nExisting data NOT in this file will be kept. Continue?')) {
         event.target.value = '';
         return;
       }
-      await db.ref('veritas').set(payload);
-      showToast('✅ Import complete — reloading...');
+
+      // Merge each subtree using update() so existing siblings stay intact
+      const updates = {};
+      if (payload.categories) {
+        Object.entries(payload.categories).forEach(([k, v]) => { updates['veritas/categories/' + k] = v; });
+      }
+      if (payload.sessions) {
+        Object.entries(payload.sessions).forEach(([k, v]) => { updates['veritas/sessions/' + k] = v; });
+      }
+      if (payload.acknowledged) {
+        Object.entries(payload.acknowledged).forEach(([k, v]) => { updates['veritas/acknowledged/' + k] = v; });
+      }
+      await db.ref().update(updates);
+      showToast('✅ Merge complete — reloading...');
       setTimeout(() => location.reload(), 1200);
     } catch(err) {
-      console.error('Import failed:', err);
-      alert('Import failed: ' + err.message);
+      console.error('Merge import failed:', err);
+      alert('Merge import failed: ' + err.message);
     } finally {
       event.target.value = '';
     }
@@ -1182,7 +1315,7 @@ async function ask() {
 document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==='Enter') ask(); });
 
 // ============================================================
-// Veritas — Evidence Intelligence © Rev 5.3
+// Veritas — Evidence Intelligence © Rev 5.4
 // ------------------------------------------------------------
 // Rev 5.0  Password-gated (legacy)
 // Rev 5.1  Clean rewrite: Google Sign-In + UID whitelist,
@@ -1197,6 +1330,10 @@ document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==
 //          ⬇ Export / ⬆ Import buttons in header matching Task Board pattern:
 //          Export downloads veritas-backup-YYYY-MM-DD.json (wrapped w/ version),
 //          Import accepts both wrapped & raw shapes, confirms before overwrite
+// Rev 5.4  Header Export/Import replaced with footer 📦 Data link matching
+//          Philinity Eats UX pattern. Opens Data Manager modal with:
+//          Full Backup (JSON), Restore from Backup (overwrite mode),
+//          Import Data (merge mode — adds/updates without wiping)
 // ============================================================
 </script>
 </body>
