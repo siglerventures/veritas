@@ -78,13 +78,38 @@ footer .rev-pill{color:var(--accent2);}
 .cat-item.active .cat-name{color:var(--text);}
 .cat-count{font-size:10px;color:var(--text3);font-family:var(--font-mono);}
 .cat-drag{font-size:12px;color:var(--text3);cursor:grab;padding:0 2px;}
+.cat-expand{font-size:10px;color:var(--text3);cursor:pointer;padding:0 3px;user-select:none;transition:transform 0.15s;width:12px;text-align:center;flex-shrink:0;}
+.cat-expand.open{transform:rotate(90deg);color:var(--accent);}
 .cat-del{font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;opacity:0;transition:opacity 0.15s;padding:0 2px;}
 .cat-item:hover .cat-del{opacity:1;}
 .cat-del:hover{color:var(--red-light);}
+
+/* Nested sessions under a category */
+.cat-sessions{margin:2px 0 4px 22px;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--border);padding-left:8px;}
+.cat-sess-item{padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;transition:all 0.12s;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;}
+.cat-sess-item:hover{background:var(--surface2);border-color:var(--border);color:var(--text);}
+.cat-sess-item.active{background:var(--surface2);border-color:var(--accent2);color:var(--text);}
+.cat-sess-item .sess-ack-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--purple-light);margin-right:5px;vertical-align:middle;}
+.cat-sess-empty{font-size:10px;color:var(--text3);font-style:italic;padding:4px 8px;}
+
 .add-cat-row{display:flex;gap:6px;margin-top:8px;}
 .add-cat-row input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:var(--font-body);outline:none;min-width:0;}
 .add-cat-row input:focus{border-color:var(--accent2);}
 .add-cat-row button{background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:5px 10px;border-radius:6px;font-size:13px;cursor:pointer;}
+
+/* SEARCH FIELD (in main input area) */
+.search-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;transition:border-color 0.15s;}
+.search-row:focus-within{border-color:var(--accent2);}
+.search-row .search-icon{font-size:12px;color:var(--text3);flex-shrink:0;}
+.search-row input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--font-body);min-width:0;}
+.search-row input::placeholder{color:var(--text3);}
+.search-row .search-clear{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;display:none;}
+.search-row .search-clear:hover{color:var(--text);}
+.search-row.active .search-clear{display:inline;}
+.search-row .search-count{font-size:10px;color:var(--accent);font-family:var(--font-mono);flex-shrink:0;}
+
+/* Match highlight (simple yellow pill treatment) */
+mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2px;border-radius:2px;}
 
 /* HISTORY */
 #hist-list{flex:1;overflow-y:auto;padding:8px;}
@@ -251,7 +276,7 @@ footer a.footer-link:hover{color:var(--accent);}
   <div style="font-size:13px;color:var(--text3);font-family:var(--font-mono);">Evidence Intelligence</div>
   <button onclick="googleSignIn()">Sign in with Google</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.4</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.5</div>
 </div>
 
 <!-- APP -->
@@ -290,7 +315,7 @@ footer a.footer-link:hover{color:var(--accent);}
 
       <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
         <div class="sb-section" style="border-bottom:none;padding-bottom:4px;">
-          <div class="sb-label">History</div>
+          <div class="sb-label">History · All Categories</div>
         </div>
         <div id="hist-list"></div>
       </div>
@@ -315,6 +340,12 @@ footer a.footer-link:hover{color:var(--accent);}
             <button onclick="newSession()" style="background:transparent;color:var(--text3);border:1px solid var(--border2);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:var(--font-body)">+ New</button>
           </div>
         </div>
+        <div class="search-row" id="search-row">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Search all chats, answers, and acknowledged facts..." autocomplete="off"/>
+          <span class="search-count" id="search-count"></span>
+          <button class="search-clear" onclick="clearSearch()" title="Clear search">✕</button>
+        </div>
         <div class="cat-select-row">
           <label>Category:</label>
           <select id="cat-select"></select>
@@ -328,7 +359,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity <span class="rev-pill">© Rev 5.4</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a></footer>
+  <footer>Philinity <span class="rev-pill">© Rev 5.5</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -496,7 +527,7 @@ async function exportData() {
     }
     const payload = {
       app: 'veritas',
-      version: 'Rev 5.4',
+      version: 'Rev 5.5',
       exportedAt: new Date().toISOString(),
       data: snap.val()
     };
@@ -616,6 +647,10 @@ let conversationHistory = [];
 let dragSrc = null;
 let appInitialized = false;
 
+// Search + tree expansion state
+let searchQuery = '';
+const expandedCategories = new Set();
+
 const CAT_COLORS = ['#6890d8','#6ab88a','#e8a84a','#d06060','#a880e8','#5dcaa5','#f0997b'];
 const DEFAULT_CATS = [
   {id:'bible',name:'Bible & Religion',color:'#6890d8',order:0},
@@ -722,25 +757,51 @@ function renderCats() {
   const list = document.getElementById('cat-list');
   list.innerHTML = '';
   categories.forEach((cat, i) => {
-    const div = document.createElement('div');
-    div.className = 'cat-item' + (activeCategory === cat.id ? ' active' : '');
-    div.draggable = true;
-    div.dataset.id = cat.id;
-    div.innerHTML = `
+    // Sessions for this category (matching search if active)
+    const catSessions = Object.entries(sessions)
+      .filter(([,s]) => s.category === cat.id)
+      .filter(([sid,s]) => !searchQuery || sessionMatchesQuery(sid, s, searchQuery))
+      .sort(([,a],[,b]) => b.updatedAt - a.updatedAt);
+
+    // When searching, auto-expand any category that has matches; auto-collapse empties
+    const shouldShowExpanded = searchQuery
+      ? catSessions.length > 0
+      : expandedCategories.has(cat.id);
+
+    // Hide categories entirely during search if they have zero matches
+    if (searchQuery && catSessions.length === 0) return;
+
+    const row = document.createElement('div');
+    row.className = 'cat-item' + (activeCategory === cat.id ? ' active' : '');
+    row.draggable = true;
+    row.dataset.id = cat.id;
+    row.innerHTML = `
+      <span class="cat-expand ${shouldShowExpanded ? 'open' : ''}" data-expand="${cat.id}" title="expand / collapse">▸</span>
       <span class="cat-drag" title="drag to reorder">⠿</span>
       <div class="cat-dot" style="background:${cat.color}"></div>
-      <span class="cat-name">${stripHTML(cat.name)}</span>
-      <span class="cat-count">${countSessions(cat.id)}</span>
+      <span class="cat-name">${highlightMatch(stripHTML(cat.name), searchQuery)}</span>
+      <span class="cat-count">${catSessions.length}${searchQuery ? '' : '/' + countSessions(cat.id)}</span>
       <button class="cat-del" onclick="deleteCategory('${cat.id}',event)" title="delete">✕</button>
     `;
-    div.addEventListener('click', () => selectCategory(cat.id));
-    div.addEventListener('dragstart', e => { dragSrc = i; div.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
-    div.addEventListener('dragend', () => div.classList.remove('dragging'));
-    div.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; div.style.borderColor='var(--accent)'; });
-    div.addEventListener('dragleave', () => { div.style.borderColor=''; });
-    div.addEventListener('drop', e => {
+    // Expand arrow click = toggle expansion (don't select category)
+    row.querySelector('.cat-expand').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (expandedCategories.has(cat.id)) expandedCategories.delete(cat.id);
+      else expandedCategories.add(cat.id);
+      renderCats();
+    });
+    // Row click anywhere else = select category + auto-expand it
+    row.addEventListener('click', () => {
+      expandedCategories.add(cat.id);
+      selectCategory(cat.id);
+    });
+    row.addEventListener('dragstart', e => { dragSrc = i; row.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; row.style.borderColor='var(--accent)'; });
+    row.addEventListener('dragleave', () => { row.style.borderColor=''; });
+    row.addEventListener('drop', e => {
       e.preventDefault();
-      div.style.borderColor='';
+      row.style.borderColor='';
       if (dragSrcSid) { moveSessionToCategory(dragSrcSid, cat.id); return; }
       if(dragSrc===null||dragSrc===i) return;
       const moved=categories.splice(dragSrc,1)[0];
@@ -749,8 +810,83 @@ function renderCats() {
       dragSrc=null;
       saveCategories(); renderCats(); renderCatSelect();
     });
-    list.appendChild(div);
+    list.appendChild(row);
+
+    // Nested session list when expanded
+    if (shouldShowExpanded) {
+      const nested = document.createElement('div');
+      nested.className = 'cat-sessions';
+      if (!catSessions.length) {
+        nested.innerHTML = `<div class="cat-sess-empty">${searchQuery ? 'No matches' : 'No sessions yet'}</div>`;
+      } else {
+        catSessions.forEach(([sid, s]) => {
+          const item = document.createElement('div');
+          item.className = 'cat-sess-item' + (activeSessionId === sid ? ' active' : '');
+          item.draggable = true;
+          item.innerHTML = `
+            ${s.hasAcknowledged ? '<span class="sess-ack-dot" title="has acknowledged fact"></span>' : ''}
+            ${highlightMatch(stripHTML(s.firstQuestion || 'Session'), searchQuery)}
+          `;
+          item.title = (s.firstQuestion || 'Session') + ' · ' + new Date(s.updatedAt).toLocaleDateString();
+          item.onclick = (ev) => { ev.stopPropagation(); loadSession(sid); };
+          item.addEventListener('contextmenu', e => showCtxMenu(e, sid));
+          item.addEventListener('dragstart', e => {
+            dragSrcSid = sid;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', sid);
+            setTimeout(() => item.style.opacity = '0.4', 0);
+          });
+          item.addEventListener('dragend', () => { item.style.opacity = ''; dragSrcSid = null; });
+          nested.appendChild(item);
+        });
+      }
+      list.appendChild(nested);
+    }
   });
+}
+
+// Search helpers
+function sessionMatchesQuery(sid, s, q) {
+  if (!q) return true;
+  const needle = q.toLowerCase();
+  if ((s.firstQuestion || '').toLowerCase().includes(needle)) return true;
+  if (Array.isArray(s.exchanges)) {
+    for (const ex of s.exchanges) {
+      if ((ex.question || '').toLowerCase().includes(needle)) return true;
+      const r = ex.result || {};
+      if ((r.summary || '').toLowerCase().includes(needle)) return true;
+      if ((r.confidence_reasoning || '').toLowerCase().includes(needle)) return true;
+      if ((r.known_disputes || '').toLowerCase().includes(needle)) return true;
+      if ((r.verdict || '').toLowerCase().includes(needle)) return true;
+    }
+  }
+  return false;
+}
+
+function ackMatchesQuery(fact, q) {
+  if (!q) return true;
+  const needle = q.toLowerCase();
+  return (fact.question || '').toLowerCase().includes(needle)
+    || (fact.summary || '').toLowerCase().includes(needle)
+    || (fact.verdict || '').toLowerCase().includes(needle);
+}
+
+// Highlight matches in rendered strings (input must already be HTML-safe / stripHTML'd)
+function highlightMatch(safeText, q) {
+  if (!q || !safeText) return safeText;
+  const needle = q.toLowerCase();
+  const hay = String(safeText);
+  const lower = hay.toLowerCase();
+  let out = '';
+  let i = 0;
+  while (i < hay.length) {
+    const idx = lower.indexOf(needle, i);
+    if (idx === -1) { out += hay.substring(i); break; }
+    out += hay.substring(i, idx);
+    out += '<mark class="search-hit">' + hay.substring(idx, idx + needle.length) + '</mark>';
+    i = idx + needle.length;
+  }
+  return out;
 }
 
 function renderCatSelect() {
@@ -903,10 +1039,20 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') removeCtxMen
 
 function renderHist() {
   const list = document.getElementById('hist-list');
-  const all = Object.entries(sessions)
-    .filter(([,s]) => !activeCategory || s.category === activeCategory)
+  // HISTORY section shows ALL sessions across categories (not filtered by active category)
+  // But IS filtered by search query if active
+  let all = Object.entries(sessions)
     .sort(([,a],[,b]) => b.updatedAt - a.updatedAt);
-  if (!all.length) { list.innerHTML = '<div class="no-hist">No sessions yet</div>'; return; }
+
+  if (searchQuery) {
+    all = all.filter(([sid, s]) => sessionMatchesQuery(sid, s, searchQuery));
+  }
+
+  if (!all.length) {
+    list.innerHTML = `<div class="no-hist">${searchQuery ? 'No sessions match "' + stripHTML(searchQuery) + '"' : 'No sessions yet'}</div>`;
+    updateSearchCount();
+    return;
+  }
   list.innerHTML = '';
   all.forEach(([sid, s]) => {
     const cat = categories.find(c=>c.id===s.category);
@@ -914,7 +1060,7 @@ function renderHist() {
     div.className = 'hist-item' + (activeSessionId === sid ? ' active' : '');
     div.draggable = true;
     div.innerHTML = `
-      <div class="hist-q">${stripHTML(s.firstQuestion || 'Session')}</div>
+      <div class="hist-q">${highlightMatch(stripHTML(s.firstQuestion || 'Session'), searchQuery)}</div>
       <div class="hist-meta">
         ${cat ? `<span class="hist-cat-dot" style="background:${cat.color}"></span>${stripHTML(cat.name)}` : ''}
         <span>${new Date(s.updatedAt).toLocaleDateString()}</span>
@@ -932,6 +1078,7 @@ function renderHist() {
     div.addEventListener('dragend', () => { div.style.opacity = ''; dragSrcSid = null; });
     list.appendChild(div);
   });
+  updateSearchCount();
 }
 
 async function loadSession(sid) {
@@ -975,10 +1122,18 @@ async function loadSession(sid) {
 
 function renderAck() {
   const list = document.getElementById('ack-list');
-  if (!acknowledgedFacts.length) { list.innerHTML = '<div class="no-ack">None yet</div>'; return; }
-  list.innerHTML = acknowledgedFacts.slice(-10).reverse().map(f => `
+  let facts = acknowledgedFacts;
+  if (searchQuery) {
+    facts = facts.filter(f => ackMatchesQuery(f, searchQuery));
+  }
+  if (!facts.length) {
+    list.innerHTML = `<div class="no-ack">${searchQuery ? 'No matches' : 'None yet'}</div>`;
+    document.getElementById('ack-count').textContent = `${acknowledgedFacts.length} acknowledged`;
+    return;
+  }
+  list.innerHTML = facts.slice(-10).reverse().map(f => `
     <div class="ack-item">
-      <div class="ack-q">${stripHTML(f.question)}</div>
+      <div class="ack-q">${highlightMatch(stripHTML(f.question), searchQuery)}</div>
       <div class="ack-score">${f.score}% · ${new Date(f.savedAt).toLocaleDateString()}</div>
     </div>
   `).join('');
@@ -1314,8 +1469,49 @@ async function ask() {
 
 document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==='Enter') ask(); });
 
+// ── SEARCH WIRING ──
+function clearSearch() {
+  searchQuery = '';
+  const input = document.getElementById('search-input');
+  if (input) input.value = '';
+  document.getElementById('search-row').classList.remove('active');
+  document.getElementById('search-count').textContent = '';
+  renderCats();
+  renderHist();
+  renderAck();
+}
+
+function updateSearchCount() {
+  const el = document.getElementById('search-count');
+  if (!el) return;
+  if (!searchQuery) { el.textContent = ''; return; }
+  // Count sessions + ack matches
+  const sessMatches = Object.entries(sessions)
+    .filter(([sid, s]) => sessionMatchesQuery(sid, s, searchQuery)).length;
+  const ackMatches = acknowledgedFacts.filter(f => ackMatchesQuery(f, searchQuery)).length;
+  const total = sessMatches + ackMatches;
+  el.textContent = total === 0 ? 'no matches' : total + ' match' + (total === 1 ? '' : 'es');
+}
+
+let searchDebounceTimer = null;
+document.getElementById('search-input').addEventListener('input', e => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    searchQuery = e.target.value.trim();
+    const row = document.getElementById('search-row');
+    if (searchQuery) row.classList.add('active');
+    else row.classList.remove('active');
+    renderCats();
+    renderHist();
+    renderAck();
+  }, 120);
+});
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Escape') clearSearch();
+});
+
 // ============================================================
-// Veritas — Evidence Intelligence © Rev 5.4
+// Veritas — Evidence Intelligence © Rev 5.5
 // ------------------------------------------------------------
 // Rev 5.0  Password-gated (legacy)
 // Rev 5.1  Clean rewrite: Google Sign-In + UID whitelist,
@@ -1327,13 +1523,21 @@ document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==
 // Rev 5.2  Clickable logo returns to main page (goHome),
 //          Sign Out button in header (firebase.auth().signOut + UI reset)
 // Rev 5.3  Philinity © Rev footer pinned below app (visible once logged in),
-//          ⬇ Export / ⬆ Import buttons in header matching Task Board pattern:
-//          Export downloads veritas-backup-YYYY-MM-DD.json (wrapped w/ version),
-//          Import accepts both wrapped & raw shapes, confirms before overwrite
+//          ⬇ Export / ⬆ Import buttons in header matching Task Board pattern
 // Rev 5.4  Header Export/Import replaced with footer 📦 Data link matching
-//          Philinity Eats UX pattern. Opens Data Manager modal with:
-//          Full Backup (JSON), Restore from Backup (overwrite mode),
-//          Import Data (merge mode — adds/updates without wiping)
+//          Philinity Eats UX. Data Manager modal: Full Backup, Restore
+//          (overwrite), Import (merge)
+// Rev 5.5  Hybrid expandable categories: click the ▸ arrow to expand a
+//          category inline and see its sessions nested beneath it; click
+//          the row to select the category AND auto-expand. HISTORY label
+//          renamed "History · All Categories" (shows everything across
+//          categories). Full-text search bar in main input area: filters
+//          sidebar as you type, debounced 120ms. Matches session
+//          first-question, all exchange Q&As (summary, reasoning,
+//          disputes, verdict), and acknowledged-fact text. Categories
+//          with zero matches hide during search; categories with matches
+//          auto-expand. Match highlights rendered as <mark class="search-
+//          hit">. Esc clears search. Match count shown in search bar.
 // ============================================================
 </script>
 </body>
