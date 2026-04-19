@@ -66,6 +66,11 @@ footer .rev-pill{color:var(--accent2);}
 .sb-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--font-mono);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
 .sb-label button{font-size:10px;color:var(--accent2);background:none;border:none;cursor:pointer;font-family:var(--font-mono);padding:0;}
 .sb-label button:hover{color:var(--accent);}
+.sb-label.collapsible{cursor:pointer;user-select:none;}
+.sb-label.collapsible:hover{color:var(--text2);}
+.sb-chevron{display:inline-block;margin-right:6px;font-size:8px;color:var(--text3);transition:transform 0.15s;}
+.sb-chevron.open{transform:rotate(90deg);color:var(--accent);}
+.sb-label-title{flex:1;display:flex;align-items:center;}
 
 /* CATEGORIES */
 #cat-list{display:flex;flex-direction:column;gap:4px;}
@@ -78,8 +83,6 @@ footer .rev-pill{color:var(--accent2);}
 .cat-item.active .cat-name{color:var(--text);}
 .cat-count{font-size:10px;color:var(--text3);font-family:var(--font-mono);}
 .cat-drag{font-size:12px;color:var(--text3);cursor:grab;padding:0 2px;}
-.cat-expand{font-size:10px;color:var(--text3);cursor:pointer;padding:0 3px;user-select:none;transition:transform 0.15s;width:12px;text-align:center;flex-shrink:0;}
-.cat-expand.open{transform:rotate(90deg);color:var(--accent);}
 
 /* Nested sessions under a category */
 .cat-sessions{margin:2px 0 4px 22px;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--border);padding-left:8px;}
@@ -287,7 +290,7 @@ footer a.footer-link:hover{color:var(--accent);}
   <div style="font-size:13px;color:var(--text3);font-family:var(--font-mono);">Evidence Intelligence</div>
   <button onclick="googleSignIn()">Sign in with Google</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.7</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.8</div>
 </div>
 
 <!-- APP -->
@@ -319,15 +322,19 @@ footer a.footer-link:hover{color:var(--accent);}
       </div>
 
       <div class="sb-section" style="flex-shrink:0;">
-        <div class="sb-label">Acknowledged Facts</div>
-        <div id="ack-list"></div>
+        <div class="sb-label collapsible" onclick="toggleAckSection()">
+          <span class="sb-label-title"><span class="sb-chevron" id="ack-chevron">▸</span>Acknowledged Facts</span>
+        </div>
+        <div id="ack-list" style="display:none;"></div>
       </div>
 
       <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
         <div class="sb-section" style="border-bottom:none;padding-bottom:4px;">
-          <div class="sb-label">History · All Categories</div>
+          <div class="sb-label collapsible" onclick="toggleHistSection()">
+            <span class="sb-label-title"><span class="sb-chevron" id="hist-chevron">▸</span>History · All Categories</span>
+          </div>
         </div>
-        <div id="hist-list"></div>
+        <div id="hist-list" style="display:none;"></div>
       </div>
     </div>
 
@@ -369,7 +376,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill">© Rev 5.7</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill">© Rev 5.8</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -803,22 +810,17 @@ function renderCats() {
     row.draggable = true;
     row.dataset.id = cat.id;
     row.innerHTML = `
-      <span class="cat-expand ${shouldShowExpanded ? 'open' : ''}" data-expand="${cat.id}" title="expand / collapse">▸</span>
       <span class="cat-drag" title="drag to reorder">⠿</span>
       <div class="cat-dot" style="background:${cat.color}"></div>
       <span class="cat-name">${highlightMatch(stripHTML(cat.name), searchQuery)}</span>
       <span class="cat-count">${catSessions.length}${searchQuery ? '' : '/' + countSessions(cat.id)}</span>
     `;
-    // Expand arrow click = toggle expansion (don't select category)
-    row.querySelector('.cat-expand').addEventListener('click', (e) => {
-      e.stopPropagation();
+    // Row click = toggle expansion AND select the category
+    // Drag handle suppresses click to avoid accidental toggle during drag
+    row.addEventListener('click', (e) => {
+      if (e.target.classList.contains('cat-drag')) return;
       if (expandedCategories.has(cat.id)) expandedCategories.delete(cat.id);
       else expandedCategories.add(cat.id);
-      renderCats();
-    });
-    // Row click anywhere else = select category + auto-expand it
-    row.addEventListener('click', () => {
-      expandedCategories.add(cat.id);
       selectCategory(cat.id);
     });
     row.addEventListener('dragstart', e => { dragSrc = i; row.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
@@ -1142,6 +1144,38 @@ function showToast(msg) {
 
 document.addEventListener('click', removeCtxMenu);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') removeCtxMenu(); });
+
+// ── COLLAPSIBLE SECTIONS (Ack Facts, History) ──
+function toggleAckSection() {
+  const list = document.getElementById('ack-list');
+  const chev = document.getElementById('ack-chevron');
+  const hidden = list.style.display === 'none';
+  list.style.display = hidden ? 'block' : 'none';
+  chev.classList.toggle('open', hidden);
+}
+
+function toggleHistSection() {
+  const list = document.getElementById('hist-list');
+  const chev = document.getElementById('hist-chevron');
+  const hidden = list.style.display === 'none';
+  list.style.display = hidden ? 'block' : 'none';
+  chev.classList.toggle('open', hidden);
+}
+
+// When a search runs, auto-expand Ack/History so matches are visible
+function autoExpandForSearch() {
+  if (!searchQuery) return;
+  const ackList = document.getElementById('ack-list');
+  const histList = document.getElementById('hist-list');
+  if (ackList && ackList.style.display === 'none') {
+    ackList.style.display = 'block';
+    document.getElementById('ack-chevron').classList.add('open');
+  }
+  if (histList && histList.style.display === 'none') {
+    histList.style.display = 'block';
+    document.getElementById('hist-chevron').classList.add('open');
+  }
+}
 
 function renderHist() {
   const list = document.getElementById('hist-list');
@@ -1610,6 +1644,7 @@ document.getElementById('search-input').addEventListener('input', e => {
     renderCats();
     renderHist();
     renderAck();
+    autoExpandForSearch();
   }, 120);
 });
 document.getElementById('search-input').addEventListener('keydown', e => {
