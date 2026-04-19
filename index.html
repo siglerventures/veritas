@@ -80,9 +80,6 @@ footer .rev-pill{color:var(--accent2);}
 .cat-drag{font-size:12px;color:var(--text3);cursor:grab;padding:0 2px;}
 .cat-expand{font-size:10px;color:var(--text3);cursor:pointer;padding:0 3px;user-select:none;transition:transform 0.15s;width:12px;text-align:center;flex-shrink:0;}
 .cat-expand.open{transform:rotate(90deg);color:var(--accent);}
-.cat-del{font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;opacity:0;transition:opacity 0.15s;padding:0 2px;}
-.cat-item:hover .cat-del{opacity:1;}
-.cat-del:hover{color:var(--red-light);}
 
 /* Nested sessions under a category */
 .cat-sessions{margin:2px 0 4px 22px;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--border);padding-left:8px;}
@@ -96,6 +93,20 @@ footer .rev-pill{color:var(--accent2);}
 .add-cat-row input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:var(--font-body);outline:none;min-width:0;}
 .add-cat-row input:focus{border-color:var(--accent2);}
 .add-cat-row button{background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:5px 10px;border-radius:6px;font-size:13px;cursor:pointer;}
+
+/* Edit Categories button and modal */
+.edit-cats-btn{width:100%;margin-top:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);padding:6px 10px;border-radius:6px;font-size:12px;font-family:var(--font-body);cursor:pointer;transition:all 0.15s;}
+.edit-cats-btn:hover{border-color:var(--accent2);color:var(--text);}
+.cat-edit-row{display:flex;align-items:center;gap:8px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;}
+.cat-edit-row.archived{opacity:0.55;}
+.cat-edit-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cat-edit-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:13px;font-family:var(--font-body);outline:none;min-width:0;}
+.cat-edit-input:focus{border-color:var(--accent2);}
+.cat-edit-btn{background:transparent;border:1px solid var(--border);color:var(--text3);padding:4px 9px;border-radius:5px;font-size:11px;font-family:var(--font-body);cursor:pointer;white-space:nowrap;}
+.cat-edit-btn:hover{border-color:var(--accent2);color:var(--text);}
+.cat-edit-btn.danger:hover{border-color:var(--red-light);color:var(--red-light);}
+.cat-edit-section-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-family:var(--font-mono);margin:14px 0 6px;}
+.cat-edit-section-label:first-child{margin-top:0;}
 
 /* SEARCH FIELD (in main input area) */
 .search-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;transition:border-color 0.15s;}
@@ -276,7 +287,7 @@ footer a.footer-link:hover{color:var(--accent);}
   <div style="font-size:13px;color:var(--text3);font-family:var(--font-mono);">Evidence Intelligence</div>
   <button onclick="googleSignIn()">Sign in with Google</button>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.6</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.7</div>
 </div>
 
 <!-- APP -->
@@ -289,7 +300,6 @@ footer a.footer-link:hover{color:var(--accent);}
     <div class="header-right">
       <span class="hbadge" id="mem-count">0 exchanges</span>
       <span class="hbadge" id="ack-count" style="color:var(--purple-light);">0 acknowledged</span>
-      <button class="hbtn" onclick="newSession()">New session</button>
     </div>
   </header>
 
@@ -305,6 +315,7 @@ footer a.footer-link:hover{color:var(--accent);}
           <input type="text" id="new-cat-input" placeholder="Category name..." maxlength="30" onkeydown="if(event.key==='Enter')addCategory()"/>
           <button onclick="addCategory()">+</button>
         </div>
+        <button class="edit-cats-btn" onclick="openCatEditModal()">⚙️ Edit Categories</button>
       </div>
 
       <div class="sb-section" style="flex-shrink:0;">
@@ -358,7 +369,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill">© Rev 5.6</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill">© Rev 5.7</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -399,6 +410,19 @@ footer a.footer-link:hover{color:var(--accent);}
         <span class="dm-filename" id="merge-filename">No file selected</span>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CATEGORIES MODAL -->
+<div class="modal-overlay" id="catEditModal" onclick="if(event.target===this) closeCatEditModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCatEditModal()">✕</button>
+    <div class="modal-title">⚙️ Edit Categories</div>
+    <div class="modal-subtitle">Rename · Archive · Delete</div>
+    <div id="cat-edit-list" style="margin-top:10px;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button class="dm-btn" onclick="closeCatEditModal()">Done</button>
     </div>
   </div>
 </div>
@@ -755,7 +779,11 @@ function saveCategories() {
 function renderCats() {
   const list = document.getElementById('cat-list');
   list.innerHTML = '';
-  categories.forEach((cat, i) => {
+  // Filter out archived categories — they only show in Edit Categories modal
+  const visibleCategories = categories.filter(c => !c.archived);
+  visibleCategories.forEach((cat) => {
+    // Use true index in full categories array for drag/drop correctness
+    const i = categories.indexOf(cat);
     // Sessions for this category (matching search if active)
     const catSessions = Object.entries(sessions)
       .filter(([,s]) => s.category === cat.id)
@@ -780,7 +808,6 @@ function renderCats() {
       <div class="cat-dot" style="background:${cat.color}"></div>
       <span class="cat-name">${highlightMatch(stripHTML(cat.name), searchQuery)}</span>
       <span class="cat-count">${catSessions.length}${searchQuery ? '' : '/' + countSessions(cat.id)}</span>
-      <button class="cat-del" onclick="deleteCategory('${cat.id}',event)" title="delete">✕</button>
     `;
     // Expand arrow click = toggle expansion (don't select category)
     row.querySelector('.cat-expand').addEventListener('click', (e) => {
@@ -890,7 +917,7 @@ function highlightMatch(safeText, q) {
 
 function renderCatSelect() {
   const sel = document.getElementById('cat-select');
-  sel.innerHTML = categories.map(c => `<option value="${c.id}">${stripHTML(c.name)}</option>`).join('');
+  sel.innerHTML = categories.filter(c => !c.archived).map(c => `<option value="${c.id}">${stripHTML(c.name)}</option>`).join('');
   if (activeCategory) sel.value = activeCategory;
 }
 
@@ -937,15 +964,95 @@ function addCategory() {
   renderCatSelect();
 }
 
-function deleteCategory(catId, e) {
-  e.stopPropagation();
-  if (!confirm('Delete this category? Sessions will remain in history.')) return;
+function deleteCategory(catId) {
+  if (!confirm('Permanently delete this category?\n\nSessions stay in history but become uncategorized. This cannot be undone — archive is safer.')) return;
   categories = categories.filter(c => c.id !== catId);
   categories.forEach((c,i) => c.order = i);
   saveCategories();
   if (activeCategory === catId) { activeCategory = null; }
   renderCats();
   renderCatSelect();
+  renderCatEditList();
+}
+
+function archiveCategory(catId) {
+  const cat = categories.find(c => c.id === catId);
+  if (!cat) return;
+  cat.archived = true;
+  saveCategories();
+  if (activeCategory === catId) { activeCategory = null; }
+  renderCats();
+  renderCatSelect();
+  renderCatEditList();
+}
+
+function unarchiveCategory(catId) {
+  const cat = categories.find(c => c.id === catId);
+  if (!cat) return;
+  cat.archived = false;
+  saveCategories();
+  renderCats();
+  renderCatSelect();
+  renderCatEditList();
+}
+
+function renameCategory(catId, newName) {
+  const cat = categories.find(c => c.id === catId);
+  if (!cat) return;
+  const clean = stripHTML(String(newName || '').trim());
+  if (!clean) return;
+  if (cat.name === clean) return;
+  cat.name = clean;
+  saveCategories();
+  renderCats();
+  renderCatSelect();
+}
+
+// ── EDIT CATEGORIES MODAL ──
+function openCatEditModal() {
+  document.getElementById('catEditModal').classList.add('open');
+  renderCatEditList();
+}
+
+function closeCatEditModal() {
+  document.getElementById('catEditModal').classList.remove('open');
+}
+
+function renderCatEditList() {
+  const container = document.getElementById('cat-edit-list');
+  const active = categories.filter(c => !c.archived);
+  const archived = categories.filter(c => c.archived);
+
+  const rowHTML = (cat, isArchived) => {
+    const safeName = stripHTML(cat.name).replace(/"/g, '&quot;');
+    return `
+      <div class="cat-edit-row${isArchived ? ' archived' : ''}">
+        <div class="cat-edit-dot" style="background:${cat.color}"></div>
+        <input type="text" class="cat-edit-input" value="${safeName}" maxlength="30"
+               onchange="renameCategory('${cat.id}', this.value)"
+               onkeydown="if(event.key==='Enter')this.blur()"/>
+        ${isArchived
+          ? `<button class="cat-edit-btn" onclick="unarchiveCategory('${cat.id}')">♻ Unarchive</button>`
+          : `<button class="cat-edit-btn" onclick="archiveCategory('${cat.id}')">📦 Archive</button>`
+        }
+        <button class="cat-edit-btn danger" onclick="deleteCategory('${cat.id}')">🗑 Delete</button>
+      </div>
+    `;
+  };
+
+  let html = '';
+  if (active.length) {
+    html += '<div class="cat-edit-section-label">Active</div>';
+    html += active.map(c => rowHTML(c, false)).join('');
+  }
+  if (archived.length) {
+    html += '<div class="cat-edit-section-label">Archived</div>';
+    html += archived.map(c => rowHTML(c, true)).join('');
+  }
+  if (!active.length && !archived.length) {
+    html = '<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center;">No categories yet. Add one from the sidebar.</div>';
+  }
+  container.innerHTML = html;
 }
 
 // ── CONTEXT MENU ──
