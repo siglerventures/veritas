@@ -297,7 +297,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.7</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.8</div>
 </div>
 
 <!-- APP -->
@@ -379,7 +379,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.7</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.8</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -459,7 +459,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.7';
+const APP_VERSION = 'Rev 6.8';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -1606,7 +1606,7 @@ Respond as the same JSON format as before.`;
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
-    const raw = data.content?.find(b=>b.type==='text')?.text||'{}';
+    const raw = (data.content?.filter(b=>b.type==='text').pop()?.text) || '{}';
     conversationHistory.push({role:'assistant',content:raw});
     const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
     const newScore = Math.round(r.confidence_score||0);
@@ -1729,7 +1729,7 @@ async function ask() {
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
-    const raw = data.content?.find(b=>b.type==='text')?.text||'{}';
+    const raw = (data.content?.filter(b=>b.type==='text').pop()?.text) || '{}';
     conversationHistory.push({role:'assistant',content:raw});
     updateMemCount();
 
@@ -1893,6 +1893,13 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          - Added META QUESTIONS rule: questions about Veritas's own
 //            capabilities / knowledge cutoff / access score ≤30 with
 //            verdict INSUFFICIENT EVIDENCE. Self-report is not a source.
+// Rev 6.8  Multi-block response handling for web-tool-enabled backend:
+//          - Cloud Function now returns multiple content blocks when
+//            web_search / web_fetch fire (text preamble, tool_use,
+//            tool_result, final text with JSON).
+//          - Swapped content.find(b.type==='text') → content.filter(...).pop()
+//            in both ask() and debate flow so we grab the FINAL text block
+//            (the JSON answer) instead of the "Let me fetch..." preamble.
 // ============================================================
 </script>
 </body>
