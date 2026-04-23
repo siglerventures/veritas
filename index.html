@@ -186,6 +186,7 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 .msg-bot{display:flex;flex-direction:column;gap:0;}
 .bot-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;border-top-left-radius:3px;overflow:hidden;}
 .bot-card.acknowledged{border-color:rgba(106,74,154,0.4);}
+.bot-direct{padding:16px 18px 10px;font-family:var(--font-display);font-size:20px;line-height:1.35;color:var(--accent3);letter-spacing:-0.01em;}
 .bot-summary{padding:14px 18px;font-size:14px;color:var(--text);line-height:1.7;border-bottom:1px solid var(--border);}
 .bot-score-section{padding:12px 18px;border-bottom:1px solid var(--border);}
 .score-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
@@ -296,7 +297,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.5</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.6</div>
 </div>
 
 <!-- APP -->
@@ -378,7 +379,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.5</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.6</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -458,7 +459,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.5';
+const APP_VERSION = 'Rev 6.6';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -815,6 +816,12 @@ INSUFFICIENT EVIDENCE — not enough primary documented record
 FALSE — primary evidence directly contradicts the premise
 OFFICIALLY CLAIMED — widely reported but primary evidence is thin or circular
 
+DIRECT ANSWER RULE:
+When the question asks for a specific fact (a date, number, duration, name, location, or yes/no), lead with that fact in the "direct_answer" field — one short sentence, no hedging, no preamble. Save context, caveats, and qualifications for the "summary" field. If the question is interpretive, values-based, or genuinely contested, give the most defensible factual framing in one sentence.
+
+BIAS FLAG DISCIPLINE:
+The "bias_flag" field must be null unless you can name a specific, documented bias pattern that actually affects the primary sources for this topic. Do not flag bias reflexively, do not flag bias to appear balanced, and do not flag bias on straightforward factual/quantitative questions where primary-source data is not in dispute.
+
 If prior conversation context was used, note it briefly.`;
 
 function buildSystem(includeCategoryPicker) {
@@ -831,6 +838,7 @@ ${list}
 
 Respond ONLY as valid JSON (no markdown, no preamble):
 {
+  "direct_answer": "One sentence. Lead with the specific fact asked for. No hedging here.",
   "summary": "2-3 sentence factual answer — include what IS documented AND what is NOT",
   "confidence_score": <integer 0-100>,
   "confidence_reasoning": "Explain the score — what primary evidence exists, what is missing, whether sourcing is circular",
@@ -838,7 +846,7 @@ Respond ONLY as valid JSON (no markdown, no preamble):
   "corroborating_sources": <integer — truly independent sources only>,
   "known_disputes": "Documented factual disputes, contradicting evidence, or 'None'",
   "verdict": "CONFIRMED | LIKELY | DISPUTED | INSUFFICIENT EVIDENCE | FALSE | OFFICIALLY CLAIMED",
-  "bias_flag": "Any detected bias in mainstream framing of this topic, or null",
+  "bias_flag": "Specific documented bias pattern affecting primary sources, or null (default null)",
   "memory_reference": "If prior conversation context was used, describe briefly. Otherwise null.",
   "category_id": "exact id from the list above"
 }`;
@@ -847,6 +855,7 @@ Respond ONLY as valid JSON (no markdown, no preamble):
 
 Respond ONLY as valid JSON (no markdown, no preamble):
 {
+  "direct_answer": "One sentence. Lead with the specific fact asked for. No hedging here.",
   "summary": "2-3 sentence factual answer — include what IS documented AND what is NOT",
   "confidence_score": <integer 0-100>,
   "confidence_reasoning": "Explain the score — what primary evidence exists, what is missing, whether sourcing is circular",
@@ -854,7 +863,7 @@ Respond ONLY as valid JSON (no markdown, no preamble):
   "corroborating_sources": <integer — truly independent sources only>,
   "known_disputes": "Documented factual disputes, contradicting evidence, or 'None'",
   "verdict": "CONFIRMED | LIKELY | DISPUTED | INSUFFICIENT EVIDENCE | FALSE | OFFICIALLY CLAIMED",
-  "bias_flag": "Any detected bias in mainstream framing of this topic, or null",
+  "bias_flag": "Specific documented bias pattern affecting primary sources, or null (default null)",
   "memory_reference": "If prior conversation context was used, describe briefly. Otherwise null."
 }`;
   }
@@ -1504,6 +1513,7 @@ function addBotCard(ex, scrollTo=true) {
   wrap.dataset.exid = ex.id;
 
   let html = `<div class="bot-card${isAck?' acknowledged':''}">
+    ${r.direct_answer ? `<div class="bot-direct">${stripHTML(r.direct_answer)}</div>` : ''}
     <div class="bot-summary">${stripHTML(r.summary||'')}</div>
     <div class="bot-score-section">
       <div class="score-header">
@@ -1865,7 +1875,14 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          belongs — in the header.
 //          Version: single APP_VERSION const drives footer pill, sign-in
 //          screen, and export payload — no more drift.
-// Rev 6.5   Created emojis for each category  
+// Rev 6.5  Category UX overhaul: emojis replace color dots everywhere;
+//          emoji picker in Edit Categories; Category dropdown removed;
+//          AI returns category_id (sidebar selection honored as intent);
+//          saveSession takes catId as parameter; drag-drop preserved.
+// Rev 6.6  Answer quality + UI prominence: added direct_answer field to
+//          SYSTEM schema (both variants). Rendered in DM Serif 20px
+//          accent gold at top of card, above summary. Tightened bias_flag
+//          — null by default, only fires on named documented bias.
 // ============================================================
 </script>
 </body>
