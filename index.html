@@ -293,7 +293,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 5.10</div>
+  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.1</div>
 </div>
 
 <!-- APP -->
@@ -348,7 +348,6 @@ footer a.footer-link:hover{color:var(--accent);}
         <span class="cat-header-count" id="cat-header-count"></span>
         <button class="new-session-btn" onclick="newSession()">+ new session</button>
       </div>
-      <div id="chat-log"></div>
       <div class="input-zone">
         <div id="session-status-bar" style="display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
@@ -376,10 +375,11 @@ footer a.footer-link:hover{color:var(--accent);}
         </div>
         <div class="input-hint">Evidence-scored · Bias-checked · Debates tracked · Enter to send</div>
       </div>
+      <div id="chat-log"></div>
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill">© Rev 5.9</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill">© Rev 6.1</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -578,7 +578,7 @@ async function exportData() {
     }
     const payload = {
       app: 'veritas',
-      version: 'Rev 5.10',
+      version: 'Rev 6.1',
       exportedAt: new Date().toISOString(),
       data: snap.val()
     };
@@ -844,6 +844,13 @@ async function initApp() {
   renderCatSelect();
   renderAck();
   renderHist();
+  // Auto-open History panel on load so sessions are visible
+  const histList = document.getElementById('hist-list');
+  const histChev = document.getElementById('hist-chevron');
+  if (histList && histList.style.display === 'none') {
+    histList.style.display = 'block';
+    if (histChev) histChev.classList.add('open');
+  }
   showEmpty();
 }
 
@@ -1249,6 +1256,7 @@ function autoExpandForSearch() {
 
 function renderHist() {
   const list = document.getElementById('hist-list');
+  const isOpen = list.style.display !== 'none';
   // HISTORY section shows ALL sessions across categories (not filtered by active category)
   // But IS filtered by search query if active
   let all = Object.entries(sessions)
@@ -1260,6 +1268,7 @@ function renderHist() {
 
   if (!all.length) {
     list.innerHTML = `<div class="no-hist">${searchQuery ? 'No sessions match "' + stripHTML(searchQuery) + '"' : 'No sessions yet'}</div>`;
+    if (isOpen) list.style.display = 'block';
     updateSearchCount();
     return;
   }
@@ -1288,6 +1297,7 @@ function renderHist() {
     div.addEventListener('dragend', () => { div.style.opacity = ''; dragSrcSid = null; });
     list.appendChild(div);
   });
+  if (isOpen) list.style.display = 'block';
   updateSearchCount();
 }
 
@@ -1332,6 +1342,7 @@ async function loadSession(sid) {
 
 function renderAck() {
   const list = document.getElementById('ack-list');
+  const isOpen = list.style.display !== 'none';
   let facts = acknowledgedFacts;
   if (searchQuery) {
     facts = facts.filter(f => ackMatchesQuery(f, searchQuery));
@@ -1348,6 +1359,7 @@ function renderAck() {
     </div>
   `).join('');
   document.getElementById('ack-count').textContent = `${acknowledgedFacts.length} acknowledged`;
+  if (isOpen) list.style.display = 'block';
 }
 
 function showEmpty() {
@@ -1749,6 +1761,16 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          with zero matches hide during search; categories with matches
 //          auto-expand. Match highlights rendered as <mark class="search-
 //          hit">. Esc clears search. Match count shown in search bar.
+// Rev 6.0  Login form hardening: wrapped sign-in button in <form> tag
+//          with onsubmit handler, added hidden username field for Chrome
+//          autocomplete compliance, added autocomplete="current-password"
+//          to sign-in button. Stops Chrome console warnings about
+//          insecure login forms.
+// Rev 6.1  Ask AI input zone moved to top of main area so conversation
+//          flows downward naturally. Fixed Acknowledged Facts and History
+//          panels collapsing whenever data refreshed (renderAck/renderHist
+//          now preserve open/closed state). History panel auto-opens on
+//          load so sessions are immediately visible after sign-in.
 // ============================================================
 </script>
 </body>
