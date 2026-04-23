@@ -245,6 +245,10 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 #ask-btn{background:var(--accent);color:#0a0a0b;border:none;padding:8px 18px;border-radius:9px;font-size:13px;font-weight:500;font-family:var(--font-body);cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
 #ask-btn:hover{background:var(--accent3);}
 #ask-btn:disabled{background:var(--text3);color:var(--surface);cursor:not-allowed;}
+#deep-btn{background:transparent;color:var(--green-light);border:1px solid var(--green-light);padding:7px 14px;border-radius:9px;font-size:12px;font-weight:500;font-family:var(--font-body);cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+#deep-btn:hover{background:rgba(106,184,138,0.12);}
+#deep-btn:disabled{opacity:0.4;cursor:not-allowed;}
+#deep-btn.armed{background:var(--green-light);color:#0a0a0b;border-color:var(--green-light);}
 .input-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:8px;font-family:var(--font-mono);}
 .error-bubble{background:rgba(138,48,48,0.15);border:1px solid rgba(138,48,48,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--red-light);font-family:var(--font-mono);}
 
@@ -297,7 +301,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.9</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.10</div>
 </div>
 
 <!-- APP -->
@@ -371,15 +375,16 @@ footer a.footer-link:hover{color:var(--accent);}
         </div>
         <div class="input-wrap">
           <input type="text" id="q-input" placeholder="Ask Veritas anything — facts, history, controversies..." autocomplete="off"/>
-          <button id="ask-btn" onclick="ask()">Analyze</button>
+          <button id="ask-btn" onclick="ask(false)">Analyze</button>
+          <button id="deep-btn" onclick="ask(true)" title="Live web search + fetch (slower, ~30-60s)">🔍 Deep Search</button>
         </div>
-        <div class="input-hint">Evidence-scored · Bias-checked · Debates tracked · Enter to send</div>
+        <div class="input-hint">Analyze = fast · Deep Search = live web fetch · URLs auto-trigger Deep</div>
       </div>
       <div id="chat-log"></div>
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.9</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.10</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -459,7 +464,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.9';
+const APP_VERSION = 'Rev 6.10';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -499,7 +504,7 @@ function stripHTML(str) {
     .replace(/window\./gi, '');
 }
 
-// ── RESPONSE PARSING (Rev 6.9) ──
+// ── RESPONSE PARSING (Rev 6.10) ──
 // When web_search / web_fetch / code_execution tools fire, the response
 // contains many blocks. The final text block often wraps the JSON in
 // narrative prose ("I have now completed my analysis. Here is my
@@ -1625,8 +1630,11 @@ Respond as the same JSON format as before.`;
 
   conversationHistory.push({role:'user', content: debatePrompt});
 
+  // Auto-enable Deep Search if the user's counter-argument contains a URL
+  const debateDeep = URL_RE.test(argument);
+
   const zone = document.getElementById(`debate-${exId}`);
-  zone.innerHTML = `<div class="thinking-bubble" style="margin:8px 12px;"><div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-text">Re-evaluating with your evidence...</span></div>`;
+  zone.innerHTML = `<div class="thinking-bubble" style="margin:8px 12px;"><div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-text">${debateDeep ? 'Fetching your cited source and re-evaluating...' : 'Re-evaluating with your evidence...'}</span></div>`;
 
   try {
     const user = firebase.auth().currentUser;
@@ -1638,7 +1646,7 @@ Respond as the same JSON format as before.`;
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + idToken
       },
-      body: JSON.stringify({ app: 'veritas', system: buildSystem(false), messages: conversationHistory })
+      body: JSON.stringify({ app: 'veritas', system: buildSystem(false), messages: conversationHistory, deep: debateDeep })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
@@ -1726,11 +1734,21 @@ async function saveSession(question, newExchange, isUpdate=false, catId=null) {
   if(cat) document.getElementById('cat-header-count').textContent = `${countSessions(catId)} sessions`;
 }
 
-async function ask() {
+// URL auto-detect: any http(s):// link in the question forces Deep Search
+const URL_RE = /\bhttps?:\/\/[^\s<>"']+/i;
+
+async function ask(deepRequested) {
   const q = document.getElementById('q-input').value.trim();
   if (!q) return;
+
+  // Auto-trigger Deep Search if the question contains a URL
+  const hasURL = URL_RE.test(q);
+  const deep = Boolean(deepRequested) || hasURL;
+
   document.getElementById('q-input').value = '';
   document.getElementById('ask-btn').disabled = true;
+  const deepBtn = document.getElementById('deep-btn');
+  if (deepBtn) { deepBtn.disabled = true; deepBtn.classList.toggle('armed', deep); }
 
   const log = document.getElementById('chat-log');
   if (log.querySelector('.empty-state')) log.innerHTML = '';
@@ -1745,7 +1763,10 @@ async function ask() {
 
   const thinkDiv = document.createElement('div');
   thinkDiv.className = 'msg-bot';
-  thinkDiv.innerHTML = `<div class="thinking-bubble"><div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-text">${aiShouldClassify ? 'Classifying and cross-referencing primary evidence...' : 'Cross-referencing primary evidence...'}</span></div>`;
+  const thinkMsg = deep
+    ? (hasURL && !deepRequested ? 'URL detected — fetching live sources (may take 30-60s)...' : 'Deep searching live web for primary evidence (may take 30-60s)...')
+    : (aiShouldClassify ? 'Classifying and cross-referencing primary evidence...' : 'Cross-referencing primary evidence...');
+  thinkDiv.innerHTML = `<div class="thinking-bubble"><div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-text">${thinkMsg}</span></div>`;
   log.appendChild(thinkDiv);
   thinkDiv.scrollIntoView({behavior:'smooth',block:'nearest'});
 
@@ -1761,7 +1782,7 @@ async function ask() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + idToken
       },
-      body: JSON.stringify({ app: 'veritas', system: buildSystem(aiShouldClassify), messages: conversationHistory })
+      body: JSON.stringify({ app: 'veritas', system: buildSystem(aiShouldClassify), messages: conversationHistory, deep })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
@@ -1814,9 +1835,11 @@ async function ask() {
     thinkDiv.innerHTML = `<div class="error-bubble">Error: ${stripHTML(e.message)}</div>`;
   }
   document.getElementById('ask-btn').disabled = false;
+  const _deepBtn = document.getElementById('deep-btn');
+  if (_deepBtn) { _deepBtn.disabled = false; _deepBtn.classList.remove('armed'); }
 }
 
-document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==='Enter') ask(); });
+document.getElementById('q-input').addEventListener('keydown', e => { if(e.key==='Enter') ask(false); });
 
 // ── SEARCH WIRING ──
 function clearSearch() {
@@ -1946,6 +1969,18 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //            scanning (string-aware) to pull the outermost {...} span
 //            out of any surrounding prose.
 //          - Both ask() and debate flow now route through the helpers.
+// Rev 6.10 Two-mode operation (Fast vs Deep Search):
+//          - Added green-outlined "🔍 Deep Search" button next to Analyze.
+//          - ask(deep) signature: deep=false (Analyze button, Enter key)
+//            stays fast (no tools, ~3s, ~2-3K tokens); deep=true enables
+//            web_search + web_fetch + code_execution (~30-60s, ~50K+ tokens).
+//          - URL auto-detect: any http(s):// link in the question or
+//            debate argument auto-enables Deep Search with a visible hint
+//            in the thinking bubble ("URL detected — fetching live sources").
+//          - Cloud Function reads `deep` field from body; only attaches
+//            tools when true AND app==='veritas'. Everyone else forced fast.
+//          - Deep button gets `.armed` class (solid green fill) while a
+//            deep request is in flight so the user sees the mode state.
 // ============================================================
 </script>
 </body>
