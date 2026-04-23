@@ -297,7 +297,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.6</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.7</div>
 </div>
 
 <!-- APP -->
@@ -379,7 +379,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.6</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.7</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -459,7 +459,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.6';
+const APP_VERSION = 'Rev 6.7';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -822,10 +822,14 @@ When the question asks for a specific fact (a date, number, duration, name, loca
 BIAS FLAG DISCIPLINE:
 The "bias_flag" field must be null unless you can name a specific, documented bias pattern that actually affects the primary sources for this topic. Do not flag bias reflexively, do not flag bias to appear balanced, and do not flag bias on straightforward factual/quantitative questions where primary-source data is not in dispute.
 
+META QUESTIONS (about your own capabilities):
+If the question asks about your own capabilities, knowledge cutoff, training data, or ability to access information, this is NOT a factual claim with primary-source evidence. Your own self-report is not a "source." For such questions: score ≤30, verdict INSUFFICIENT EVIDENCE, and answer plainly in direct_answer. Do not cite "direct system knowledge" as evidence.
+
 If prior conversation context was used, note it briefly.`;
 
 function buildSystem(includeCategoryPicker) {
-  let prompt = SYSTEM_BASE;
+  const today = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  let prompt = `Today's date is ${today}. Use this as the current date for any temporal questions.\n\n` + SYSTEM_BASE;
 
   if (includeCategoryPicker) {
     const active = categories.filter(c => !c.archived);
@@ -1883,6 +1887,12 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          SYSTEM schema (both variants). Rendered in DM Serif 20px
 //          accent gold at top of card, above summary. Tightened bias_flag
 //          — null by default, only fires on named documented bias.
+// Rev 6.7  Temporal grounding + meta-question scoring:
+//          - buildSystem() prepends today's date so Veritas can answer
+//            date questions and reason about recency.
+//          - Added META QUESTIONS rule: questions about Veritas's own
+//            capabilities / knowledge cutoff / access score ≤30 with
+//            verdict INSUFFICIENT EVIDENCE. Self-report is not a source.
 // ============================================================
 </script>
 </body>
