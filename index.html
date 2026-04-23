@@ -297,7 +297,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.8</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.9</div>
 </div>
 
 <!-- APP -->
@@ -379,7 +379,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.8</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.9</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -459,7 +459,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.8';
+const APP_VERSION = 'Rev 6.9';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -497,6 +497,42 @@ function stripHTML(str) {
     .replace(/location\s*=/gi, '')
     .replace(/document\./gi, '')
     .replace(/window\./gi, '');
+}
+
+// ── RESPONSE PARSING (Rev 6.9) ──
+// When web_search / web_fetch / code_execution tools fire, the response
+// contains many blocks. The final text block often wraps the JSON in
+// narrative prose ("I have now completed my analysis. Here is my
+// assessment: { ... }"). We need to (1) pick the last text block and
+// (2) extract the outermost JSON object from within it.
+function getFinalText(data) {
+  const texts = (data.content || []).filter(b => b.type === 'text' && typeof b.text === 'string');
+  if (!texts.length) return '{}';
+  return texts[texts.length - 1].text;
+}
+
+function extractJSON(raw) {
+  if (!raw) return '{}';
+  // Strip markdown fences first
+  let s = String(raw).replace(/```json/gi, '').replace(/```/g, '').trim();
+  // If it already parses, great
+  try { JSON.parse(s); return s; } catch (_) {}
+  // Find the outermost {...} span by tracking brace depth, ignoring braces
+  // inside strings. Works even when model wraps JSON in narrative prose.
+  const start = s.indexOf('{');
+  if (start < 0) return '{}';
+  let depth = 0, inStr = false, esc = false, end = -1;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (esc) { esc = false; continue; }
+    if (ch === '\\') { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+  }
+  if (end < 0) return '{}';
+  return s.slice(start, end + 1);
 }
 
 // ── GOOGLE SIGN-IN ──
@@ -1606,9 +1642,9 @@ Respond as the same JSON format as before.`;
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
-    const raw = (data.content?.filter(b=>b.type==='text').pop()?.text) || '{}';
+    const raw = getFinalText(data);
     conversationHistory.push({role:'assistant',content:raw});
-    const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const r = JSON.parse(extractJSON(raw));
     const newScore = Math.round(r.confidence_score||0);
 
     ex.result = r;
@@ -1729,11 +1765,11 @@ async function ask() {
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
-    const raw = (data.content?.filter(b=>b.type==='text').pop()?.text) || '{}';
+    const raw = getFinalText(data);
     conversationHistory.push({role:'assistant',content:raw});
     updateMemCount();
 
-    const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const r = JSON.parse(extractJSON(raw));
 
     // Resolve final category:
     //   1. If this is a continuation of an existing session, keep that session's category.
@@ -1900,6 +1936,16 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          - Swapped content.find(b.type==='text') → content.filter(...).pop()
 //            in both ask() and debate flow so we grab the FINAL text block
 //            (the JSON answer) instead of the "Let me fetch..." preamble.
+// Rev 6.9  Robust JSON extraction from narrated responses:
+//          - With code_execution + web_fetch, the final text block often
+//            wraps the JSON in prose ("I have now completed my analysis.
+//            Here is my assessment: { ... }") — straight JSON.parse fails.
+//          - Added getFinalText(data) + extractJSON(raw) helpers:
+//            getFinalText finds the last type='text' block; extractJSON
+//            tries straight parse first, then falls back to brace-depth
+//            scanning (string-aware) to pull the outermost {...} span
+//            out of any surrounding prose.
+//          - Both ask() and debate flow now route through the helpers.
 // ============================================================
 </script>
 </body>
