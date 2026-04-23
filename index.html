@@ -293,7 +293,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.3</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.4</div>
 </div>
 
 <!-- APP -->
@@ -348,6 +348,7 @@ footer a.footer-link:hover{color:var(--accent);}
         <span class="cat-header-count" id="cat-header-count"></span>
         <button class="new-session-btn" onclick="newSession()">+ new session</button>
       </div>
+      <div id="chat-log"></div>
       <div class="input-zone">
         <div id="session-status-bar" style="display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
@@ -375,11 +376,10 @@ footer a.footer-link:hover{color:var(--accent);}
         </div>
         <div class="input-hint">Evidence-scored · Bias-checked · Debates tracked · Enter to send</div>
       </div>
-      <div id="chat-log"></div>
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill">© Rev 6.3</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.4</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -459,6 +459,16 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
+const APP_VERSION = 'Rev 6.4';
+
+// Keep version displays in sync with APP_VERSION
+document.addEventListener('DOMContentLoaded', () => {
+  const pill = document.getElementById('rev-pill');
+  if (pill) pill.textContent = '© ' + APP_VERSION;
+  const pwRev = document.getElementById('pw-rev');
+  if (pwRev) pwRev.textContent = APP_VERSION;
+});
+
 const FB_CONFIG = {
   apiKey: "AIzaSyCrW9Lrf7fWVqRxKqsnuPK0tL6UYbd_qds",
   authDomain: "philinity-893d2.firebaseapp.com",
@@ -578,7 +588,7 @@ async function exportData() {
     }
     const payload = {
       app: 'veritas',
-      version: 'Rev 6.1',
+      version: APP_VERSION,
       exportedAt: new Date().toISOString(),
       data: snap.val()
     };
@@ -1786,6 +1796,10 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          (histPanelOpen, ackPanelOpen). renderHist/renderAck now read
 //          from variables not DOM, so panel state survives all re-renders
 //          regardless of call order. History defaults to open on load.
+// Rev 6.4  Layout: input-zone moved below chat-log so answers expand
+//          upward and input anchors at bottom (standard chat UX).
+//          Version: single APP_VERSION const drives footer pill, sign-in
+//          screen, and export payload — no more drift.
 // ============================================================
 </script>
 </body>
