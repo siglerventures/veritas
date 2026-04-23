@@ -38,11 +38,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 /* LAYOUT */
 #app{display:none;height:100vh;flex-direction:column;}
 header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:12px;}
-.logo{display:flex;align-items:baseline;gap:10px;cursor:pointer;transition:opacity 0.15s;}
+.logo{display:flex;align-items:baseline;gap:10px;cursor:pointer;transition:opacity 0.15s;flex-shrink:0;}
 .logo:hover{opacity:0.75;}
 .logo-word{font-family:var(--font-display);font-size:24px;color:var(--accent);}
 .logo-tag{font-size:10px;font-weight:300;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;}
-.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;}
 .hbadge{font-family:var(--font-mono);font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:6px;}
 .hbtn{font-size:12px;color:var(--text3);background:transparent;border:1px solid var(--border);padding:5px 12px;border-radius:6px;cursor:pointer;font-family:var(--font-body);transition:all 0.15s;}
 .hbtn:hover{color:var(--text);border-color:var(--border2);}
@@ -79,6 +79,12 @@ footer .rev-pill{color:var(--accent2);}
 .cat-item.active{background:var(--surface2);border-color:var(--accent2);}
 .cat-item.dragging{opacity:0.4;}
 .cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cat-emoji{font-size:15px;flex-shrink:0;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:18px;}
+.cat-header-emoji{font-size:15px;line-height:1;}
+.cat-edit-emoji{font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:2px 6px;border-radius:6px;transition:background 0.15s;user-select:none;}
+.cat-edit-emoji:hover{background:var(--surface3);}
+.ctx-emoji{font-size:13px;margin-right:6px;line-height:1;}
+.hist-cat-emoji{font-size:12px;margin-right:4px;line-height:1;}
 .cat-name{font-size:13px;color:var(--text2);flex:1;}
 .cat-item.active .cat-name{color:var(--text);}
 .cat-count{font-size:10px;color:var(--text3);font-family:var(--font-mono);}
@@ -112,7 +118,7 @@ footer .rev-pill{color:var(--accent2);}
 .cat-edit-section-label:first-child{margin-top:0;}
 
 /* SEARCH FIELD (in main input area) */
-.search-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;transition:border-color 0.15s;}
+.search-row{display:flex;align-items:center;gap:8px;flex:1;max-width:520px;margin:0 auto;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;transition:border-color 0.15s;}
 .search-row:focus-within{border-color:var(--accent2);}
 .search-row .search-icon{font-size:12px;color:var(--text3);flex-shrink:0;}
 .search-row input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--font-body);min-width:0;}
@@ -231,9 +237,6 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 
 /* INPUT ZONE */
 .input-zone{padding:16px 32px 24px;border-top:1px solid var(--border);flex-shrink:0;}
-.cat-select-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.cat-select-row label{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
-.cat-select-row select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;font-family:var(--font-body);outline:none;cursor:pointer;}
 .input-wrap{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:10px 12px 10px 18px;transition:border-color 0.15s;}
 .input-wrap:focus-within{border-color:var(--accent2);}
 #q-input{flex:1;background:transparent;border:none;outline:none;font-family:var(--font-body);font-size:14px;color:var(--text);min-width:0;}
@@ -293,7 +296,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.4</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.5</div>
 </div>
 
 <!-- APP -->
@@ -302,6 +305,12 @@ footer a.footer-link:hover{color:var(--accent);}
     <div class="logo" onclick="goHome()" title="Return to main page">
       <span class="logo-word">Veritas</span>
       <span class="logo-tag">Evidence Intelligence</span>
+    </div>
+    <div class="search-row" id="search-row">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Search all chats, answers, and acknowledged facts..." autocomplete="off"/>
+      <span class="search-count" id="search-count"></span>
+      <button class="search-clear" onclick="clearSearch()" title="Clear search">✕</button>
     </div>
     <div class="header-right">
       <span class="hbadge" id="mem-count">0 exchanges</span>
@@ -343,12 +352,11 @@ footer a.footer-link:hover{color:var(--accent);}
 
     <div id="main">
       <div class="cat-header" id="cat-header" style="display:none;">
-        <div class="cat-header-dot" id="cat-header-dot"></div>
+        <span class="cat-header-emoji" id="cat-header-emoji"></span>
         <span class="cat-header-name" id="cat-header-name"></span>
         <span class="cat-header-count" id="cat-header-count"></span>
         <button class="new-session-btn" onclick="newSession()">+ new session</button>
       </div>
-      <div id="chat-log"></div>
       <div class="input-zone">
         <div id="session-status-bar" style="display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
@@ -360,26 +368,17 @@ footer a.footer-link:hover{color:var(--accent);}
             <button onclick="newSession()" style="background:transparent;color:var(--text3);border:1px solid var(--border2);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:var(--font-body)">+ New</button>
           </div>
         </div>
-        <div class="search-row" id="search-row">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="search-input" placeholder="Search all chats, answers, and acknowledged facts..." autocomplete="off"/>
-          <span class="search-count" id="search-count"></span>
-          <button class="search-clear" onclick="clearSearch()" title="Clear search">✕</button>
-        </div>
-        <div class="cat-select-row">
-          <label>Category:</label>
-          <select id="cat-select"></select>
-        </div>
         <div class="input-wrap">
           <input type="text" id="q-input" placeholder="Ask Veritas anything — facts, history, controversies..." autocomplete="off"/>
           <button id="ask-btn" onclick="ask()">Analyze</button>
         </div>
         <div class="input-hint">Evidence-scored · Bias-checked · Debates tracked · Enter to send</div>
       </div>
+      <div id="chat-log"></div>
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.4</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.5</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DATA MANAGER MODAL -->
@@ -459,7 +458,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.4';
+const APP_VERSION = 'Rev 6.5';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -535,7 +534,6 @@ function goHome() {
   document.getElementById('mem-count').textContent = '0 exchanges';
   document.getElementById('session-status-bar').style.display = 'none';
   document.getElementById('cat-header').style.display = 'none';
-  document.getElementById('cat-select').selectedIndex = 0;
   if (appInitialized) {
     renderCats();
     renderHist();
@@ -766,13 +764,13 @@ let ackPanelOpen = false;   // closed by default
 
 const CAT_COLORS = ['#6890d8','#6ab88a','#e8a84a','#d06060','#a880e8','#5dcaa5','#f0997b'];
 const DEFAULT_CATS = [
-  {id:'bible',name:'Bible & Religion',color:'#6890d8',order:0},
-  {id:'history',name:'History',color:'#6ab88a',order:1},
-  {id:'science',name:'Science',color:'#e8a84a',order:2},
-  {id:'government',name:'Government & Politics',color:'#d06060',order:3},
-  {id:'conspiracy',name:'Conspiracy & Disputed Events',color:'#a880e8',order:4},
-  {id:'health',name:'Health & Medicine',color:'#5dcaa5',order:5},
-  {id:'war',name:'War & Military',color:'#f0997b',order:6},
+  {id:'bible',name:'Bible & Religion',color:'#6890d8',emoji:'✝️',order:0},
+  {id:'history',name:'History',color:'#6ab88a',emoji:'📜',order:1},
+  {id:'science',name:'Science',color:'#e8a84a',emoji:'🔬',order:2},
+  {id:'government',name:'Government & Politics',color:'#d06060',emoji:'🏛️',order:3},
+  {id:'conspiracy',name:'Conspiracy & Disputed Events',color:'#a880e8',emoji:'🕵️',order:4},
+  {id:'health',name:'Health & Medicine',color:'#5dcaa5',emoji:'⚕️',order:5},
+  {id:'war',name:'War & Military',color:'#f0997b',emoji:'⚔️',order:6},
 ];
 
 const STARTERS = [
@@ -786,7 +784,7 @@ const STARTERS = [
   'Was the 2020 US election stolen?',
 ];
 
-const SYSTEM = `You are Veritas, a strict evidence-based research AI. You acknowledge bias exists in mainstream narratives and you actively work to separate documented fact from opinion, propaganda, or unsupported consensus.
+const SYSTEM_BASE = `You are Veritas, a strict evidence-based research AI. You acknowledge bias exists in mainstream narratives and you actively work to separate documented fact from opinion, propaganda, or unsupported consensus.
 
 You answer using ONLY:
 1. Documented historical facts confirmed by multiple independent witnesses or primary sources
@@ -817,7 +815,35 @@ INSUFFICIENT EVIDENCE — not enough primary documented record
 FALSE — primary evidence directly contradicts the premise
 OFFICIALLY CLAIMED — widely reported but primary evidence is thin or circular
 
-If prior conversation context was used, note it briefly.
+If prior conversation context was used, note it briefly.`;
+
+function buildSystem(includeCategoryPicker) {
+  let prompt = SYSTEM_BASE;
+
+  if (includeCategoryPicker) {
+    const active = categories.filter(c => !c.archived);
+    const list = active.map(c => `- ${c.id}: ${c.name}`).join('\n');
+    prompt += `
+
+CATEGORY CLASSIFICATION:
+Classify this question into exactly one of these categories by returning its id in the "category_id" field. Pick the best fit based on the question's primary subject matter.
+${list}
+
+Respond ONLY as valid JSON (no markdown, no preamble):
+{
+  "summary": "2-3 sentence factual answer — include what IS documented AND what is NOT",
+  "confidence_score": <integer 0-100>,
+  "confidence_reasoning": "Explain the score — what primary evidence exists, what is missing, whether sourcing is circular",
+  "evidence_type": ["list of evidence types used"],
+  "corroborating_sources": <integer — truly independent sources only>,
+  "known_disputes": "Documented factual disputes, contradicting evidence, or 'None'",
+  "verdict": "CONFIRMED | LIKELY | DISPUTED | INSUFFICIENT EVIDENCE | FALSE | OFFICIALLY CLAIMED",
+  "bias_flag": "Any detected bias in mainstream framing of this topic, or null",
+  "memory_reference": "If prior conversation context was used, describe briefly. Otherwise null.",
+  "category_id": "exact id from the list above"
+}`;
+  } else {
+    prompt += `
 
 Respond ONLY as valid JSON (no markdown, no preamble):
 {
@@ -831,6 +857,10 @@ Respond ONLY as valid JSON (no markdown, no preamble):
   "bias_flag": "Any detected bias in mainstream framing of this topic, or null",
   "memory_reference": "If prior conversation context was used, describe briefly. Otherwise null."
 }`;
+  }
+
+  return prompt;
+}
 
 async function initApp() {
   if (appInitialized) return;
@@ -840,6 +870,16 @@ async function initApp() {
   const catSnap = await db.ref('veritas/categories').get();
   if (catSnap.exists()) {
     categories = Object.values(catSnap.val()).sort((a,b) => a.order - b.order);
+    // Migration: ensure every category has an emoji. Match by id to default set first, fallback to 📁.
+    let migrated = false;
+    categories.forEach(cat => {
+      if (!cat.emoji) {
+        const def = DEFAULT_CATS.find(d => d.id === cat.id);
+        cat.emoji = def ? def.emoji : '📁';
+        migrated = true;
+      }
+    });
+    if (migrated) saveCategories();
   } else {
     categories = DEFAULT_CATS;
     saveCategories();
@@ -900,7 +940,7 @@ function renderCats() {
     row.dataset.id = cat.id;
     row.innerHTML = `
       <span class="cat-drag" title="drag to reorder">⠿</span>
-      <div class="cat-dot" style="background:${cat.color}"></div>
+      <span class="cat-emoji">${stripHTML(cat.emoji || '📁')}</span>
       <span class="cat-name">${highlightMatch(stripHTML(cat.name), searchQuery)}</span>
       <span class="cat-count">${catSessions.length}${searchQuery ? '' : '/' + countSessions(cat.id)}</span>
     `;
@@ -1006,11 +1046,7 @@ function highlightMatch(safeText, q) {
   return out;
 }
 
-function renderCatSelect() {
-  const sel = document.getElementById('cat-select');
-  sel.innerHTML = categories.filter(c => !c.archived).map(c => `<option value="${c.id}">${stripHTML(c.name)}</option>`).join('');
-  if (activeCategory) sel.value = activeCategory;
-}
+function renderCatSelect() { /* Rev 6.5: removed — AI now auto-categorizes. Stub kept so legacy callers stay safe. */ }
 
 function countSessions(catId) {
   return Object.values(sessions).filter(s => s.category === catId).length;
@@ -1022,12 +1058,11 @@ function selectCategory(catId) {
   conversationHistory = [];
   renderCats();
   renderHist();
-  document.getElementById('cat-select').value = catId;
   const cat = categories.find(c=>c.id===catId);
   if (cat) {
     const hdr = document.getElementById('cat-header');
     hdr.style.display = 'flex';
-    document.getElementById('cat-header-dot').style.background = cat.color;
+    document.getElementById('cat-header-emoji').textContent = cat.emoji || '📁';
     document.getElementById('cat-header-name').textContent = cat.name;
     const count = countSessions(catId);
     document.getElementById('cat-header-count').textContent = `${count} session${count!==1?'s':''}`;
@@ -1047,7 +1082,7 @@ function addCategory() {
   if (!name) return;
   const id = name.toLowerCase().replace(/[^a-z0-9]/g,'-') + '-' + Date.now();
   const color = CAT_COLORS[categories.length % CAT_COLORS.length];
-  categories.push({id, name, color, order: categories.length});
+  categories.push({id, name, color, emoji:'📁', order: categories.length});
   saveCategories();
   inp.value = '';
   document.getElementById('add-cat-row').style.display = 'none';
@@ -1118,7 +1153,7 @@ function renderCatEditList() {
     const safeName = stripHTML(cat.name).replace(/"/g, '&quot;');
     return `
       <div class="cat-edit-row${isArchived ? ' archived' : ''}">
-        <div class="cat-edit-dot" style="background:${cat.color}"></div>
+        <span class="cat-edit-emoji" title="Click to change emoji" onclick="openEmojiPicker('${cat.id}', event)">${stripHTML(cat.emoji || '📁')}</span>
         <input type="text" class="cat-edit-input" value="${safeName}" maxlength="30"
                onchange="renameCategory('${cat.id}', this.value)"
                onkeydown="if(event.key==='Enter')this.blur()"/>
@@ -1168,7 +1203,7 @@ function showCtxMenu(e, sid) {
   categories.forEach(cat => {
     const item = document.createElement('div');
     item.className = 'ctx-item';
-    item.innerHTML = `<span class="ctx-dot" style="background:${cat.color}"></span>${stripHTML(cat.name)}`;
+    item.innerHTML = `<span class="ctx-emoji">${stripHTML(cat.emoji || '📁')}</span>${stripHTML(cat.name)}`;
     item.onclick = () => { moveSessionToCategory(sid, cat.id); removeCtxMenu(); };
     menu.appendChild(item);
   });
@@ -1297,7 +1332,7 @@ function renderHist() {
     div.innerHTML = `
       <div class="hist-q">${highlightMatch(stripHTML(s.firstQuestion || 'Session'), searchQuery)}</div>
       <div class="hist-meta">
-        ${cat ? `<span class="hist-cat-dot" style="background:${cat.color}"></span>${stripHTML(cat.name)}` : ''}
+        ${cat ? `<span class="hist-cat-emoji">${stripHTML(cat.emoji || '📁')}</span>${stripHTML(cat.name)}` : ''}
         <span>${new Date(s.updatedAt).toLocaleDateString()}</span>
         ${s.hasAcknowledged ? '<span class="hist-ack">ACKNOWLEDGED</span>' : ''}
       </div>
@@ -1336,7 +1371,6 @@ async function loadSession(sid) {
   }
   renderCats();
   renderHist();
-  document.getElementById('cat-select').value = s.category;
   updateSessionStatusBar(sid);
 
   const log = document.getElementById('chat-log');
@@ -1344,7 +1378,7 @@ async function loadSession(sid) {
   document.getElementById('cat-header').style.display = 'flex';
   const cat = categories.find(c=>c.id===s.category);
   if(cat){
-    document.getElementById('cat-header-dot').style.background = cat.color;
+    document.getElementById('cat-header-emoji').textContent = cat.emoji || '📁';
     document.getElementById('cat-header-name').textContent = cat.name;
     document.getElementById('cat-header-count').textContent = `${countSessions(s.category)} sessions`;
   }
@@ -1554,7 +1588,7 @@ Respond as the same JSON format as before.`;
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + idToken
       },
-      body: JSON.stringify({ app: 'veritas', system: SYSTEM, messages: conversationHistory })
+      body: JSON.stringify({ app: 'veritas', system: buildSystem(false), messages: conversationHistory })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
@@ -1610,8 +1644,8 @@ async function acknowledgeResult(exId) {
   }
 }
 
-async function saveSession(question, newExchange, isUpdate=false) {
-  const catId = document.getElementById('cat-select').value;
+async function saveSession(question, newExchange, isUpdate=false, catId=null) {
+  if (!catId) catId = activeCategory || (categories.find(c => !c.archived)?.id) || 'history';
   if (!activeSessionId) {
     activeSessionId = 'sess-' + Date.now();
     sessions[activeSessionId] = {
@@ -1651,22 +1685,17 @@ async function ask() {
   const log = document.getElementById('chat-log');
   if (log.querySelector('.empty-state')) log.innerHTML = '';
 
-  const catId = document.getElementById('cat-select').value;
-  activeCategory = catId;
-
-  const hdr = document.getElementById('cat-header');
-  hdr.style.display = 'flex';
-  const cat = categories.find(c=>c.id===catId);
-  if(cat){
-    document.getElementById('cat-header-dot').style.background = cat.color;
-    document.getElementById('cat-header-name').textContent = cat.name;
-  }
+  // Option A: if the user has a category selected in the sidebar (and isn't
+  // continuing an existing session in a different cat), that's their intent —
+  // honor it and skip AI classification. Otherwise, let AI classify.
+  const userSelectedCat = activeCategory && !activeSessionId ? activeCategory : null;
+  const aiShouldClassify = !userSelectedCat && !activeSessionId;
 
   addUserBubble(q);
 
   const thinkDiv = document.createElement('div');
   thinkDiv.className = 'msg-bot';
-  thinkDiv.innerHTML = `<div class="thinking-bubble"><div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-text">Cross-referencing primary evidence...</span></div>`;
+  thinkDiv.innerHTML = `<div class="thinking-bubble"><div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="thinking-text">${aiShouldClassify ? 'Classifying and cross-referencing primary evidence...' : 'Cross-referencing primary evidence...'}</span></div>`;
   log.appendChild(thinkDiv);
   thinkDiv.scrollIntoView({behavior:'smooth',block:'nearest'});
 
@@ -1682,7 +1711,7 @@ async function ask() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + idToken
       },
-      body: JSON.stringify({ app: 'veritas', system: SYSTEM, messages: conversationHistory })
+      body: JSON.stringify({ app: 'veritas', system: buildSystem(aiShouldClassify), messages: conversationHistory })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API error');
@@ -1691,12 +1720,44 @@ async function ask() {
     updateMemCount();
 
     const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    // Resolve final category:
+    //   1. If this is a continuation of an existing session, keep that session's category.
+    //   2. Else if user had one selected in sidebar, use that.
+    //   3. Else use AI's category_id, validated against active categories.
+    //   4. Fallback: first active category (or 'history' if somehow none active).
+    let resolvedCat;
+    if (activeSessionId && sessions[activeSessionId]?.category) {
+      resolvedCat = sessions[activeSessionId].category;
+    } else if (userSelectedCat) {
+      resolvedCat = userSelectedCat;
+    } else {
+      const aiCat = typeof r.category_id === 'string' ? r.category_id : null;
+      const valid = aiCat && categories.find(c => c.id === aiCat && !c.archived);
+      if (valid) {
+        resolvedCat = aiCat;
+      } else {
+        const firstActive = categories.find(c => !c.archived);
+        resolvedCat = firstActive ? firstActive.id : (categories[0] ? categories[0].id : 'history');
+      }
+    }
+    activeCategory = resolvedCat;
+
+    // Update the category header at the top of main content
+    const hdr = document.getElementById('cat-header');
+    hdr.style.display = 'flex';
+    const cat = categories.find(c=>c.id===resolvedCat);
+    if(cat){
+      document.getElementById('cat-header-emoji').textContent = cat.emoji || '📁';
+      document.getElementById('cat-header-name').textContent = cat.name;
+    }
+
     const exId = 'ex-' + Date.now();
     const exchange = {id:exId, question:q, result:r, rawResponse:raw, acknowledged:false, debated:false, timestamp:Date.now()};
 
     thinkDiv.remove();
     addBotCard(exchange);
-    await saveSession(q, exchange);
+    await saveSession(q, exchange, false, resolvedCat);
     renderCats();
 
   } catch(e) {
@@ -1796,10 +1857,15 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          (histPanelOpen, ackPanelOpen). renderHist/renderAck now read
 //          from variables not DOM, so panel state survives all re-renders
 //          regardless of call order. History defaults to open on load.
-// Rev 6.4  Layout: input-zone moved below chat-log so answers expand
-//          upward and input anchors at bottom (standard chat UX).
+// Rev 6.4  Layout: search-row promoted from input-zone into the global
+//          header, centered between logo and exchange/acknowledged badges
+//          with flex:1 and max-width 520px. input-zone kept above
+//          chat-log (v6.3 order). Reclaims ~54px of vertical space in
+//          the input area and puts global search where it architecturally
+//          belongs — in the header.
 //          Version: single APP_VERSION const drives footer pill, sign-in
 //          screen, and export payload — no more drift.
+// Rev 6.5   Created emojis for each category  
 // ============================================================
 </script>
 </body>
