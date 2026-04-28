@@ -288,6 +288,62 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 /* Footer link */
 footer a.footer-link{color:var(--text3);cursor:pointer;font-size:10px;text-decoration:none;margin-left:8px;transition:color 0.15s;letter-spacing:0;}
 footer a.footer-link:hover{color:var(--accent);}
+
+/* ============================================================
+   MOBILE RESPONSIVE (Rev 6.11)
+   Strategy: hamburger toggles sidebar as a slide-in DRAWER over
+   main content with a tap-dismiss backdrop. Header search drops
+   to its own row. Badges shrink. Nothing changes above 768px.
+   ============================================================ */
+
+/* Hamburger button — hidden on desktop, shown on mobile */
+#menu-btn{display:none;background:transparent;border:1px solid var(--border2);color:var(--text2);font-size:18px;line-height:1;padding:6px 10px;border-radius:8px;cursor:pointer;flex-shrink:0;font-family:var(--font-body);}
+#menu-btn:hover{background:var(--surface2);color:var(--text);}
+
+/* Backdrop — hidden by default; visible only when sidebar is open on mobile */
+#sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:998;animation:fadeIn 0.18s ease;}
+#sidebar-backdrop.open{display:block;}
+
+@media (max-width: 768px) {
+  /* Hamburger visible */
+  #menu-btn{display:inline-flex;align-items:center;justify-content:center;}
+
+  /* Header reflows: logo + hamburger on row 1, search on row 2 */
+  header{flex-wrap:wrap;padding:10px 12px;gap:8px;}
+  .logo-tag{display:none;} /* "Evidence Intelligence" tag too long for narrow screens */
+  .logo-word{font-size:20px;}
+  .search-row{order:3;flex-basis:100%;max-width:none;margin:4px 0 0;}
+  .header-right{margin-left:auto;flex-shrink:0;}
+  .hbadge{font-size:10px;padding:3px 7px;}
+
+  /* Sidebar becomes an off-canvas drawer */
+  #sidebar{position:fixed;top:0;bottom:0;left:0;width:84%;max-width:300px;z-index:999;transform:translateX(-100%);transition:transform 0.22s ease;box-shadow:4px 0 20px rgba(0,0,0,0.4);}
+  #sidebar.open{transform:translateX(0);}
+
+  /* Main content fills full width on mobile */
+  #main{width:100%;}
+
+  /* Padding tweaks so things don't crowd the edges */
+  #chat-log{padding:14px 14px;}
+  .input-zone{padding:10px 14px 14px;}
+  .cat-header{padding:8px 14px;}
+  .empty-title{font-size:24px;}
+  .empty-sub{font-size:12px;}
+
+  /* Input row: allow wrapping so input + 2 buttons don't squeeze */
+  .input-wrap{flex-wrap:wrap;gap:8px;padding:8px 10px;}
+  #q-input{flex-basis:100%;font-size:16px;} /* 16px prevents iOS zoom on focus */
+  #ask-btn,#deep-btn{flex:1;min-width:0;}
+
+  /* Modals: full screen feel */
+  .modal{padding:20px;border-radius:14px;}
+  .modal-title{font-size:18px;}
+}
+
+/* Very narrow phones — hide the badges, the data is in chat anyway */
+@media (max-width: 380px) {
+  .header-right{display:none;}
+}
 </style>
 </head>
 <body>
@@ -301,12 +357,13 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.10</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.11</div>
 </div>
 
 <!-- APP -->
 <div id="app">
   <header>
+    <button id="menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
     <div class="logo" onclick="goHome()" title="Return to main page">
       <span class="logo-word">Veritas</span>
       <span class="logo-tag">Evidence Intelligence</span>
@@ -384,8 +441,11 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.10</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.11</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
+
+<!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
+<div id="sidebar-backdrop" onclick="closeSidebar()"></div>
 
 <!-- DATA MANAGER MODAL -->
 <!-- DATA MANAGER MODAL -->
@@ -464,7 +524,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.10';
+const APP_VERSION = 'Rev 6.11';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -504,7 +564,7 @@ function stripHTML(str) {
     .replace(/window\./gi, '');
 }
 
-// ── RESPONSE PARSING (Rev 6.10) ──
+// ── RESPONSE PARSING (Rev 6.11) ──
 // When web_search / web_fetch / code_execution tools fire, the response
 // contains many blocks. The final text block often wraps the JSON in
 // narrative prose ("I have now completed my analysis. Here is my
@@ -581,7 +641,28 @@ function goHome() {
     renderHist();
   }
   showEmpty();
+  closeSidebar(); // collapse drawer if open (mobile)
 }
+
+// ── MOBILE SIDEBAR DRAWER (Rev 6.11) ──
+// Toggles the slide-in sidebar on screens ≤768px. On desktop the
+// sidebar is always visible and these functions are harmless no-ops
+// because the .open class doesn't change layout above the breakpoint.
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  const opening = !sb.classList.contains('open');
+  sb.classList.toggle('open', opening);
+  bd.classList.toggle('open', opening);
+}
+function closeSidebar() {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  if (sb) sb.classList.remove('open');
+  if (bd) bd.classList.remove('open');
+}
+// Close drawer on Escape
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
 
 async function signOut() {
   if (!confirm('Sign out of Veritas?')) return;
@@ -1122,6 +1203,7 @@ function selectCategory(catId) {
     document.getElementById('cat-header-count').textContent = `${count} session${count!==1?'s':''}`;
   }
   showEmpty();
+  closeSidebar(); // collapse drawer on mobile after selection
 }
 
 function toggleAddCat() {
@@ -1442,6 +1524,7 @@ async function loadSession(sid) {
     addBotCard(ex, false);
   });
   updateMemCount();
+  closeSidebar(); // collapse drawer on mobile after loading a session
 }
 
 function renderAck() {
@@ -1981,6 +2064,23 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //            tools when true AND app==='veritas'. Everyone else forced fast.
 //          - Deep button gets `.armed` class (solid green fill) while a
 //            deep request is in flight so the user sees the mode state.
+// Rev 6.11 Mobile responsive layout:
+//          - Added @media (max-width: 768px) breakpoint. Veritas was
+//            never made responsive — sidebar took 60% of phone screens
+//            leaving content unusable.
+//          - Hamburger button (☰) added to header. On mobile the sidebar
+//            becomes an off-canvas drawer (84% width, max 300px) that
+//            slides in over main content; backdrop dismisses on tap.
+//          - Header reflows: logo + hamburger row 1, search row 2.
+//            "Evidence Intelligence" tag and badges shrink/hide as needed.
+//          - Input row wraps on narrow screens (q-input full width on row 1,
+//            Analyze + Deep Search side-by-side row 2). q-input set to 16px
+//            so iOS doesn't auto-zoom on focus.
+//          - selectCategory() and loadSession() auto-close the drawer so
+//            tapping a category on mobile actually shows you content.
+//          - Escape key closes drawer.
+//          - Below 380px viewport, the exchange/acknowledged badges hide
+//            entirely — that data is in chat anyway.
 // ============================================================
 </script>
 </body>
