@@ -357,7 +357,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.11</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.12</div>
 </div>
 
 <!-- APP -->
@@ -396,7 +396,7 @@ footer a.footer-link:hover{color:var(--accent);}
       </div>
 
       <div class="sb-section" style="flex-shrink:0;">
-        <div class="sb-label collapsible" onclick="toggleAckSection()">
+        <div class="sb-label collapsible" onclick="toggleAckSection(event)">
           <span class="sb-label-title"><span class="sb-chevron" id="ack-chevron">▸</span>Acknowledged Facts</span>
         </div>
         <div id="ack-list" style="display:none;"></div>
@@ -404,7 +404,7 @@ footer a.footer-link:hover{color:var(--accent);}
 
       <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
         <div class="sb-section" style="border-bottom:none;padding-bottom:4px;">
-          <div class="sb-label collapsible" onclick="toggleHistSection()">
+          <div class="sb-label collapsible" onclick="toggleHistSection(event)">
             <span class="sb-label-title"><span class="sb-chevron" id="hist-chevron">▸</span>History · All Categories</span>
           </div>
         </div>
@@ -441,11 +441,11 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.11</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.12</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
-<div id="sidebar-backdrop" onclick="closeSidebar()"></div>
+<div id="sidebar-backdrop" onclick="if(event.target===this)closeSidebar()"></div>
 
 <!-- DATA MANAGER MODAL -->
 <!-- DATA MANAGER MODAL -->
@@ -524,7 +524,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.11';
+const APP_VERSION = 'Rev 6.12';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -564,7 +564,7 @@ function stripHTML(str) {
     .replace(/window\./gi, '');
 }
 
-// ── RESPONSE PARSING (Rev 6.11) ──
+// ── RESPONSE PARSING (Rev 6.9) ──
 // When web_search / web_fetch / code_execution tools fire, the response
 // contains many blocks. The final text block often wraps the JSON in
 // narrative prose ("I have now completed my analysis. Here is my
@@ -1406,7 +1406,8 @@ document.addEventListener('click', removeCtxMenu);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') removeCtxMenu(); });
 
 // ── COLLAPSIBLE SECTIONS (Ack Facts, History) ──
-function toggleAckSection() {
+function toggleAckSection(e) {
+  if (e) e.stopPropagation();
   ackPanelOpen = !ackPanelOpen;
   const list = document.getElementById('ack-list');
   const chev = document.getElementById('ack-chevron');
@@ -1414,7 +1415,8 @@ function toggleAckSection() {
   if (chev) chev.classList.toggle('open', ackPanelOpen);
 }
 
-function toggleHistSection() {
+function toggleHistSection(e) {
+  if (e) e.stopPropagation();
   histPanelOpen = !histPanelOpen;
   const list = document.getElementById('hist-list');
   const chev = document.getElementById('hist-chevron');
@@ -2081,6 +2083,14 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          - Escape key closes drawer.
 //          - Below 380px viewport, the exchange/acknowledged badges hide
 //            entirely — that data is in chat anyway.
+// Rev 6.12 Mobile drawer dismiss fix:
+//          - toggleHistSection / toggleAckSection now stopPropagation
+//            on their click events.
+//          - Backdrop onclick now requires event.target === this so a
+//            bubbled-up click from a child can't dismiss the drawer.
+//          - Fixes a mobile bug where tapping History to expand inside
+//            the drawer caused the whole drawer to dismiss due to
+//            layout-shift-during-touchend.
 // ============================================================
 </script>
 </body>
