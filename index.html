@@ -357,7 +357,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.12</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.13</div>
 </div>
 
 <!-- APP -->
@@ -441,7 +441,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.12</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.13</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
@@ -524,7 +524,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.12';
+const APP_VERSION = 'Rev 6.13';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -636,9 +636,15 @@ function goHome() {
   document.getElementById('mem-count').textContent = '0 exchanges';
   document.getElementById('session-status-bar').style.display = 'none';
   document.getElementById('cat-header').style.display = 'none';
+  // Rev 6.13: reset all sidebar expansion state so a logo tap is a real
+  // "back to home" — collapse expanded categories and the two accordions.
+  expandedCategories.clear();
+  histPanelOpen = false;
+  ackPanelOpen = false;
   if (appInitialized) {
     renderCats();
     renderHist();
+    renderAck();
   }
   showEmpty();
   closeSidebar(); // collapse drawer if open (mobile)
@@ -1079,13 +1085,22 @@ function renderCats() {
       <span class="cat-name">${highlightMatch(stripHTML(cat.name), searchQuery)}</span>
       <span class="cat-count">${catSessions.length}${searchQuery ? '' : '/' + countSessions(cat.id)}</span>
     `;
-    // Row click = toggle expansion AND select the category
-    // Drag handle suppresses click to avoid accidental toggle during drag
+    // Row click behavior:
+    //   Desktop: toggle expansion AND jump to category home.
+    //   Mobile (≤768px): toggle expansion only. Drawer stays open. User
+    //   taps a session (which closes the drawer via loadSession) to go
+    //   somewhere. This was Rev 6.13 mobile UX fix.
+    // Drag handle suppresses click to avoid accidental toggle during drag.
     row.addEventListener('click', (e) => {
       if (e.target.classList.contains('cat-drag')) return;
       if (expandedCategories.has(cat.id)) expandedCategories.delete(cat.id);
       else expandedCategories.add(cat.id);
-      selectCategory(cat.id);
+      const isMobile = window.matchMedia('(max-width: 768px)').matches;
+      if (isMobile) {
+        renderCats(); // re-render to show the expanded session list inline
+      } else {
+        selectCategory(cat.id);
+      }
     });
     row.addEventListener('dragstart', e => { dragSrc = i; row.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
     row.addEventListener('dragend', () => row.classList.remove('dragging'));
@@ -2091,6 +2106,16 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //          - Fixes a mobile bug where tapping History to expand inside
 //            the drawer caused the whole drawer to dismiss due to
 //            layout-shift-during-touchend.
+// Rev 6.13 Two more mobile UX fixes:
+//          - Category row tap on mobile (≤768px) now ONLY toggles inline
+//            expansion of that category's session list, instead of also
+//            calling selectCategory() (which closed the drawer). Tapping
+//            a session inside the expanded list still loads it and closes
+//            the drawer. Desktop behavior unchanged.
+//          - goHome() now also collapses every expanded category and the
+//            History/Acknowledged accordions, so tapping the Veritas logo
+//            is a true "home" reset rather than leaving sidebar state
+//            partially expanded.
 // ============================================================
 </script>
 </body>
