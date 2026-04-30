@@ -606,15 +606,18 @@ const PHIL_UID = 'CuJigrzCbRfFFsM7uqe0mix46xH3';
 const ROOT_ADMIN_UIDS = [PHIL_UID];
 
 // Convert email → RTDB-safe key. Firebase RTDB disallows ., #, $, [, ]
-// in keys. Same logic as AutoFlag client + Cloud Function.
+// in keys. Replacement strings MUST match the Cloud Function's emailToKey
+// exactly, otherwise an email containing $ [ ] / would be keyed
+// differently between client and server and the lookup would silently fail.
 function emailToKey(email) {
   if (!email) return '';
   return email.toLowerCase().trim()
     .replace(/\./g, '_')
     .replace(/#/g, '_HASH_')
-    .replace(/\$/g, '_USD_')
-    .replace(/\[/g, '_LBR_')
-    .replace(/\]/g, '_RBR_');
+    .replace(/\$/g, '_DOL_')
+    .replace(/\[/g, '_OB_')
+    .replace(/\]/g, '_CB_')
+    .replace(/\//g, '_FS_');
 }
 
 // Roster of all non-root-admin people, keyed by emailKey:
