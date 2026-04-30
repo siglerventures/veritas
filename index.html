@@ -285,6 +285,25 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 .dm-file-label:hover{background:var(--accent3);}
 .dm-filename{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-left:8px;}
 
+/* ── PEOPLE MODAL (Rev 6.14) ── */
+.person-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface2);}
+.person-info{flex:1;min-width:0;}
+.person-name{font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.person-email{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.role-badge{font-size:10px;padding:2px 7px;border-radius:10px;font-family:var(--font-mono);letter-spacing:0.05em;}
+.role-badge.admin{background:rgba(154,125,62,0.18);color:var(--accent);border:1px solid rgba(154,125,62,0.4);}
+.role-badge.moderator{background:rgba(106,74,154,0.18);color:var(--purple-light);border:1px solid rgba(106,74,154,0.4);}
+.role-badge.user{background:var(--surface3);color:var(--text2);border:1px solid var(--border2);}
+.person-remove{background:transparent;border:1px solid var(--border2);color:var(--text3);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;flex-shrink:0;}
+.person-remove:hover{color:#d06060;border-color:#d06060;}
+.person-empty{font-size:12px;color:var(--text3);text-align:center;padding:14px 8px;font-style:italic;}
+.people-add{margin-top:18px;padding:14px;border:1px dashed var(--border2);border-radius:10px;background:var(--surface);}
+.people-add-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--font-mono);margin-bottom:10px;}
+.people-add-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.people-add-row > input,.people-add-row > select{flex:1;min-width:160px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;}
+.people-add-row > input:focus,.people-add-row > select:focus{border-color:var(--accent2);}
+.people-add-row > button{flex-shrink:0;}
+
 /* Footer link */
 footer a.footer-link{color:var(--text3);cursor:pointer;font-size:10px;text-decoration:none;margin-left:8px;transition:color 0.15s;letter-spacing:0;}
 footer a.footer-link:hover{color:var(--accent);}
@@ -357,7 +376,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.13</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.14</div>
 </div>
 
 <!-- APP -->
@@ -385,14 +404,14 @@ footer a.footer-link:hover{color:var(--accent);}
       <div class="sb-section">
         <div class="sb-label">
           Categories
-          <button onclick="toggleAddCat()">+ add</button>
+          <button id="add-cat-btn" onclick="toggleAddCat()">+ add</button>
         </div>
         <div id="cat-list"></div>
         <div class="add-cat-row" id="add-cat-row" style="display:none;">
           <input type="text" id="new-cat-input" placeholder="Category name..." maxlength="30" onkeydown="if(event.key==='Enter')addCategory()"/>
           <button onclick="addCategory()">+</button>
         </div>
-        <button class="edit-cats-btn" onclick="openCatEditModal()">⚙️ Edit Categories</button>
+        <button id="edit-cats-btn" class="edit-cats-btn" onclick="openCatEditModal()">⚙️ Edit Categories</button>
       </div>
 
       <div class="sb-section" style="flex-shrink:0;">
@@ -441,7 +460,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.13</span> <a class="footer-link" onclick="openDataModal()">📦 Data</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.14</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
@@ -520,11 +539,39 @@ footer a.footer-link:hover{color:var(--accent);}
   </div>
 </div>
 
+<!-- PEOPLE MODAL (Rev 6.14) -->
+<div class="modal-overlay" id="peopleModal" onclick="if(event.target===this) closePeopleModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closePeopleModal()">✕</button>
+    <div class="modal-title">👥 People</div>
+    <div class="modal-subtitle">Add by email · Pick a role · They sign in with that exact Google email</div>
+    <div id="people-list" style="margin-top:14px;"></div>
+    <div class="people-add">
+      <div class="people-add-title">Add a person</div>
+      <div class="people-add-row">
+        <input type="email" id="new-person-email" placeholder="email@example.com" autocomplete="off" />
+        <input type="text"  id="new-person-name"  placeholder="Display name (optional)" autocomplete="off" />
+      </div>
+      <div class="people-add-row">
+        <select id="new-person-role">
+          <option value="user">👤 User — can ask, debate, browse</option>
+          <option value="moderator">🛡️ Moderator — can curate categories &amp; acknowledge</option>
+          <option value="admin">★ Admin — full access incl. People &amp; Data</option>
+        </select>
+        <button class="dm-btn" onclick="addPerson()">+ Add Person</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button class="dm-btn" onclick="closePeopleModal()">Done</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.13';
+const APP_VERSION = 'Rev 6.14';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -548,7 +595,46 @@ firebase.initializeApp(FB_CONFIG);
 const db = firebase.database();
 const auth = firebase.auth();
 
-const ALLOWED_UIDS = ['CuJigrzCbRfFFsM7uqe0mix46xH3', 'g4stabGPKiWAE23NTw6oUsqawWf1'];
+// ── PEOPLE / AUTH MODEL (Rev 6.14) ──
+// Switched from UID-keyed whitelist to email-keyed People system.
+// - Phil is hardcoded as root admin (lockout insurance)
+// - Everyone else lives at /veritas/people/{emailKey}
+// - Roles: 'admin' | 'moderator' | 'user'
+// - Auth state caches role to avoid re-running RTDB lookup on every
+//   token refresh (matches AutoFlag Rev 1.21 stability pattern)
+const PHIL_UID = 'CuJigrzCbRfFFsM7uqe0mix46xH3';
+const ROOT_ADMIN_UIDS = [PHIL_UID];
+
+// Convert email → RTDB-safe key. Firebase RTDB disallows ., #, $, [, ]
+// in keys. Same logic as AutoFlag client + Cloud Function.
+function emailToKey(email) {
+  if (!email) return '';
+  return email.toLowerCase().trim()
+    .replace(/\./g, '_')
+    .replace(/#/g, '_HASH_')
+    .replace(/\$/g, '_USD_')
+    .replace(/\[/g, '_LBR_')
+    .replace(/\]/g, '_RBR_');
+}
+
+// Roster of all non-root-admin people, keyed by emailKey:
+//   { email, name, role, addedAt, addedBy }
+let peopleRoster = {};
+
+// Cached current-user state. userRole stays set across token refreshes
+// so onAuthStateChanged doesn't re-do RTDB lookups (Rev 1.21 fix).
+const state = {
+  user: null,
+  userRole: null,           // 'admin' | 'moderator' | 'user'
+  userPersonRecord: null,   // entry from /veritas/people, if any
+};
+
+// Permission helpers — used to gate UI features per role.
+const isAdmin     = () => state.userRole === 'admin';
+const isModerator = () => state.userRole === 'moderator';
+const canModerate = () => isAdmin() || isModerator();   // edit cats, ack, edit/del any session
+const canAddPeople = () => isAdmin();                    // manage People modal
+const canDataManage = () => isAdmin();                   // export/restore
 
 // ── SECURITY: Strip HTML/XSS from any string before rendering ──
 function stripHTML(str) {
@@ -601,15 +687,43 @@ function extractJSON(raw) {
 }
 
 // ── GOOGLE SIGN-IN ──
+// Resolve the signed-in user's role:
+//   1. If Phil (hardcoded UID) → admin
+//   2. Else look up /veritas/people/{emailKey(email)} → use stored role
+//   3. Otherwise → reject (hard sign-out, message shown)
+async function resolveRole(user) {
+  if (!user) return { role: null, record: null };
+  if (ROOT_ADMIN_UIDS.includes(user.uid)) {
+    return { role: 'admin', record: null };
+  }
+  const ek = emailToKey(user.email);
+  if (!ek) return { role: null, record: null };
+  try {
+    const snap = await firebase.database().ref(`veritas/people/${ek}`).get();
+    if (snap.exists()) {
+      const rec = snap.val();
+      const role = (rec.role === 'admin' || rec.role === 'moderator' || rec.role === 'user') ? rec.role : null;
+      return { role, record: rec };
+    }
+  } catch (e) {
+    console.error('Role lookup failed:', e);
+  }
+  return { role: null, record: null };
+}
+
 async function googleSignIn() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
     const result = await firebase.auth().signInWithPopup(provider);
-    if (!ALLOWED_UIDS.includes(result.user.uid)) {
+    const { role, record } = await resolveRole(result.user);
+    if (!role) {
       await firebase.auth().signOut();
       document.getElementById('pw-err').textContent = 'This Google account is not authorized.';
       return;
     }
+    state.user = result.user;
+    state.userRole = role;
+    state.userPersonRecord = record;
     document.getElementById('pw-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     initApp();
@@ -619,13 +733,39 @@ async function googleSignIn() {
   }
 }
 
-// Check if already signed in on load
-auth.onAuthStateChanged(user => {
-  if (user && ALLOWED_UIDS.includes(user.uid)) {
-    document.getElementById('pw-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    initApp();
+// Auth-state observer with Rev 1.21 stability:
+//   1. Skip role re-verification once role is resolved (token refreshes don't re-run RTDB lookup)
+//   2. Ignore transient null user when a session is already established
+auth.onAuthStateChanged(async (user) => {
+  // Same UID we already verified? Just update token reference and bail.
+  if (user && state.user && state.user.uid === user.uid && state.userRole) {
+    state.user = user;
+    return;
   }
+  // Transient null during token refresh — keep our session.
+  if (!user && state.user && state.userRole) {
+    console.warn('[auth] Transient null user — ignoring (existing session held)');
+    return;
+  }
+  // Real sign-out (manual or session expired) — show login.
+  if (!user) {
+    state.user = null;
+    state.userRole = null;
+    state.userPersonRecord = null;
+    return;
+  }
+  // New sign-in — verify role.
+  const { role, record } = await resolveRole(user);
+  if (!role) {
+    await firebase.auth().signOut();
+    return;
+  }
+  state.user = user;
+  state.userRole = role;
+  state.userPersonRecord = record;
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  initApp();
 });
 
 // ── NAVIGATION & SIGN OUT ──
@@ -678,10 +818,15 @@ async function signOut() {
     categories = [];
     sessions = {};
     acknowledgedFacts = [];
+    peopleRoster = {};
     activeCategory = null;
     activeSessionId = null;
     conversationHistory = [];
     appInitialized = false;
+    // Reset cached auth state (Rev 6.14)
+    state.user = null;
+    state.userRole = null;
+    state.userPersonRecord = null;
     // Flip UI back to sign-in screen
     document.getElementById('app').style.display = 'none';
     document.getElementById('pw-screen').style.display = 'flex';
@@ -690,6 +835,117 @@ async function signOut() {
     console.error('Sign out failed:', e);
     alert('Sign out failed: ' + e.message);
   }
+}
+
+// ── PEOPLE MANAGEMENT (Rev 6.14) ──
+// Live-subscribe to /veritas/people. Updates peopleRoster on every change.
+function subscribePeople() {
+  db.ref('veritas/people').on('value', (snap) => {
+    peopleRoster = snap.val() || {};
+    // Re-render the People modal if it's open so the list stays live
+    const modal = document.getElementById('peopleModal');
+    if (modal && modal.classList.contains('open')) renderPeopleList();
+  });
+}
+
+// Apply role-based UI visibility. Called once after sign-in and any time
+// permission gates need refreshing (e.g., after role changes via the modal).
+function applyRoleUI() {
+  // 👥 People button (footer) — admin only
+  const peopleBtn = document.getElementById('peopleBtn');
+  if (peopleBtn) peopleBtn.style.display = canAddPeople() ? '' : 'none';
+  // Data Manager (📦 Data) — admin only
+  const dataBtn = document.getElementById('dataBtn');
+  if (dataBtn) dataBtn.style.display = canDataManage() ? '' : 'none';
+  // Edit Categories button — admin/moderator only
+  const editCatsBtn = document.getElementById('edit-cats-btn');
+  if (editCatsBtn) editCatsBtn.style.display = canModerate() ? '' : 'none';
+  // + add (sidebar add-category trigger) — admin/moderator only
+  const addCatBtn = document.getElementById('add-cat-btn');
+  if (addCatBtn) addCatBtn.style.display = canModerate() ? '' : 'none';
+}
+
+function openPeopleModal() {
+  if (!canAddPeople()) return;
+  document.getElementById('peopleModal').classList.add('open');
+  renderPeopleList();
+}
+
+function closePeopleModal() {
+  document.getElementById('peopleModal').classList.remove('open');
+}
+
+function renderPeopleList() {
+  const list = document.getElementById('people-list');
+  // Phil row — always shown, never removable
+  const phil = `
+    <div class="person-row" style="opacity:0.85">
+      <div class="person-info">
+        <div class="person-name">Phil <span class="role-badge admin">★ Admin (root)</span></div>
+        <div class="person-email">Hardcoded — cannot be removed</div>
+      </div>
+    </div>`;
+  // Group entries by role for readability
+  const entries = Object.entries(peopleRoster);
+  if (!entries.length) {
+    list.innerHTML = phil + `<div class="person-empty">No other people yet. Add one below.</div>`;
+    return;
+  }
+  const order = { admin: 0, moderator: 1, user: 2 };
+  entries.sort(([,a], [,b]) => (order[a.role] ?? 99) - (order[b.role] ?? 99));
+  const rows = entries.map(([key, p]) => {
+    const role = p.role || 'user';
+    const badge = role === 'admin' ? '★ Admin' : role === 'moderator' ? '🛡️ Moderator' : '👤 User';
+    return `
+      <div class="person-row">
+        <div class="person-info">
+          <div class="person-name">${stripHTML(p.name || p.email || key)} <span class="role-badge ${role}">${badge}</span></div>
+          <div class="person-email">${stripHTML(p.email || '')}</div>
+        </div>
+        <button class="person-remove" onclick="removePerson('${key}')" title="Remove">✕</button>
+      </div>`;
+  }).join('');
+  list.innerHTML = phil + rows;
+}
+
+async function addPerson() {
+  const emailInput = document.getElementById('new-person-email');
+  const nameInput  = document.getElementById('new-person-name');
+  const roleSelect = document.getElementById('new-person-role');
+  const email = emailInput.value.trim().toLowerCase();
+  const name  = nameInput.value.trim();
+  const role  = roleSelect.value;
+  if (!email || !email.includes('@')) {
+    alert('Enter a valid email address.');
+    return;
+  }
+  if (!['admin','moderator','user'].includes(role)) {
+    alert('Pick a role.');
+    return;
+  }
+  const ek = emailToKey(email);
+  if (peopleRoster[ek]) {
+    alert('This email is already in the People list.');
+    return;
+  }
+  const entry = {
+    email,
+    name: name || email.split('@')[0],
+    role,
+    addedAt: Date.now(),
+    addedBy: state.user ? state.user.uid : 'unknown'
+  };
+  await db.ref(`veritas/people/${ek}`).set(entry);
+  emailInput.value = '';
+  nameInput.value = '';
+  roleSelect.value = 'user';
+}
+
+async function removePerson(emailKey) {
+  const p = peopleRoster[emailKey];
+  if (!p) return;
+  if (!confirm(`Remove ${p.name || p.email}? They will lose access on their next sign-in.`)) return;
+  await db.ref(`veritas/people/${emailKey}`).remove();
 }
 
 // ── EXPORT / IMPORT (Data Manager) ──
@@ -1044,6 +1300,11 @@ async function initApp() {
   const histChev = document.getElementById('hist-chevron');
   if (histList) histList.style.display = histPanelOpen ? 'block' : 'none';
   if (histChev) histChev.classList.toggle('open', histPanelOpen);
+
+  // Rev 6.14: live-subscribe to /veritas/people and apply role-based UI gates
+  subscribePeople();
+  applyRoleUI();
+
   showEmpty();
 }
 
@@ -1363,11 +1624,13 @@ function showCtxMenu(e, sid) {
   sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
   menu.appendChild(sep);
 
-  const del = document.createElement('div');
-  del.className = 'ctx-item ctx-danger';
-  del.innerHTML = '🗑 Delete Session';
-  del.onclick = () => { deleteSession(sid); removeCtxMenu(); };
-  menu.appendChild(del);
+  if (canModerate()) {
+    const del = document.createElement('div');
+    del.className = 'ctx-item ctx-danger';
+    del.innerHTML = '🗑 Delete Session';
+    del.onclick = () => { deleteSession(sid); removeCtxMenu(); };
+    menu.appendChild(del);
+  }
 
   let x = e.clientX, y = e.clientY;
   document.body.appendChild(menu);
@@ -1651,7 +1914,7 @@ function addBotCard(ex, scrollTo=true) {
   const score = Math.min(100, Math.max(0, Math.round(r.confidence_score||0)));
   const col = scoreColor(score);
   const isAck = ex.acknowledged;
-  const canAck = score >= 85 && !isAck;
+  const canAck = score >= 85 && !isAck && canModerate();
 
   const wrap = document.createElement('div');
   wrap.className = 'msg-bot';
@@ -1763,7 +2026,7 @@ Respond as the same JSON format as before.`;
       <div style="font-size:11px;color:var(--accent);font-family:var(--font-mono);margin-bottom:6px;">Re-evaluation after debate:</div>
       <div style="font-size:13px;color:var(--text);line-height:1.6;">${stripHTML(r.summary)}</div>
       <div style="margin-top:6px;font-family:var(--font-mono);font-size:12px;color:${scoreColor(newScore)};">New score: ${newScore}% · ${stripHTML(r.verdict)}</div>
-      ${newScore>=85?`<button class="action-btn ack-btn" style="margin-top:8px;" onclick="acknowledgeResult('${exId}')">Score now ${newScore}% — Acknowledge</button>`:''}
+      ${newScore>=85&&canModerate()?`<button class="action-btn ack-btn" style="margin-top:8px;" onclick="acknowledgeResult('${exId}')">Score now ${newScore}% — Acknowledge</button>`:''}
     </div>`;
   } catch(e) {
     zone.innerHTML = `<div class="error-bubble" style="margin:8px 12px;">Error: ${stripHTML(e.message)}</div>`;
@@ -2116,6 +2379,25 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //            History/Acknowledged accordions, so tapping the Veritas logo
 //            is a true "home" reset rather than leaving sidebar state
 //            partially expanded.
+// Rev 6.14 People system + role-based permissions:
+//          - Auth model switched from UID-keyed whitelist to email-keyed.
+//            Phil hardcoded as root admin (lockout insurance); everyone
+//            else lives at /veritas/people/{emailKey} with role
+//            'admin' | 'moderator' | 'user'.
+//          - Permission matrix:
+//              Admin:     everything (manage People, Data Manager, edit cats, ack)
+//              Moderator: edit cats, acknowledge, edit/delete sessions
+//              User:      ask, debate, browse — no curation, no ack, no delete
+//          - 👥 People modal in footer (admin-only visible). Add by email
+//            with role dropdown; removable; live-subscribed via .on().
+//          - Auth-state observer caches role across token refreshes
+//            (matches AutoFlag Rev 1.21 stability fix): same UID short-
+//            circuits, transient null users are ignored.
+//          - Hard reject for unknown emails (no pending queue) — matches
+//            Veritas's existing "small invitation list" usage pattern.
+//          - applyRoleUI() hides: Edit Categories button, + add cat,
+//            Data Manager, People modal trigger, Acknowledge buttons,
+//            Delete Session in context menu — all per role.
 // ============================================================
 </script>
 </body>
