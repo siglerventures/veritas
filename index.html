@@ -376,7 +376,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.14</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.15</div>
 </div>
 
 <!-- APP -->
@@ -460,7 +460,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.14</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.15</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
@@ -571,7 +571,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.14';
+const APP_VERSION = 'Rev 6.15';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -603,7 +603,9 @@ const auth = firebase.auth();
 // - Auth state caches role to avoid re-running RTDB lookup on every
 //   token refresh (matches AutoFlag Rev 1.21 stability pattern)
 const PHIL_UID = 'CuJigrzCbRfFFsM7uqe0mix46xH3';
-const ROOT_ADMIN_UIDS = [PHIL_UID];
+// Two ROOT admin UIDs are hardcoded as a lockout-proof escape hatch and MUST
+// stay identical across client + Firebase rules (philinity-893d2 standard).
+const ROOT_ADMIN_UIDS = [PHIL_UID, 'g4stabGPKiWAE23NTw6oUsqawWf1'];
 
 // Convert email → RTDB-safe key. Firebase RTDB disallows ., #, $, [, ]
 // in keys. Replacement strings MUST match the Cloud Function's emailToKey
@@ -842,7 +844,11 @@ async function signOut() {
 
 // ── PEOPLE MANAGEMENT (Rev 6.14) ──
 // Live-subscribe to /veritas/people. Updates peopleRoster on every change.
+// The roster is admin-only at the database level (and peopleRoster is only
+// consumed by the admin-only People modal), so only subscribe when admin —
+// otherwise a moderator/user would trigger a permission-denied on this read.
 function subscribePeople() {
+  if (!canAddPeople()) return;
   db.ref('veritas/people').on('value', (snap) => {
     peopleRoster = snap.val() || {};
     // Re-render the People modal if it's open so the list stays live
