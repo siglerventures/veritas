@@ -177,11 +177,13 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 .cat-header-dot{width:8px;height:8px;border-radius:50%;}
 .cat-header-name{font-size:12px;color:var(--text2);}
 .cat-header-count{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
+.cat-header-author{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
 .new-session-btn{margin-left:auto;font-size:11px;color:var(--accent2);background:none;border:none;cursor:pointer;font-family:var(--font-mono);}
 .new-session-btn:hover{color:var(--accent);}
 
 /* MESSAGES */
-.msg-user{display:flex;justify-content:flex-end;}
+.msg-user{display:flex;flex-direction:column;align-items:flex-end;}
+.msg-user-author{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin:0 5px 3px 0;}
 .msg-user-bubble{background:var(--surface2);border:1px solid var(--border2);border-radius:14px;border-bottom-right-radius:3px;padding:11px 15px;max-width:75%;font-size:14px;color:var(--text);line-height:1.6;}
 .msg-bot{display:flex;flex-direction:column;gap:0;}
 .bot-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;border-top-left-radius:3px;overflow:hidden;}
@@ -376,7 +378,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.15</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.16</div>
 </div>
 
 <!-- APP -->
@@ -436,6 +438,7 @@ footer a.footer-link:hover{color:var(--accent);}
         <span class="cat-header-emoji" id="cat-header-emoji"></span>
         <span class="cat-header-name" id="cat-header-name"></span>
         <span class="cat-header-count" id="cat-header-count"></span>
+        <span class="cat-header-author" id="cat-header-author"></span>
         <button class="new-session-btn" onclick="newSession()">+ new session</button>
       </div>
       <div class="input-zone">
@@ -460,7 +463,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.15</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.16</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
@@ -571,7 +574,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.15';
+const APP_VERSION = 'Rev 6.16';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -640,6 +643,29 @@ const isModerator = () => state.userRole === 'moderator';
 const canModerate = () => isAdmin() || isModerator();   // edit cats, ack, edit/del any session
 const canAddPeople = () => isAdmin();                    // manage People modal
 const canDataManage = () => isAdmin();                   // export/restore
+
+// ── AUTHOR ATTRIBUTION (Rev 6.16) ──
+// Veritas is a shared board: every roster member sees all sessions, and the
+// point is to argue a perspective and let others weigh the proof. So every
+// session and every exchange is stamped with WHO posted it, and the UI shows
+// it ("who said what"). Records created before 6.16 have no author → "Unknown".
+function currentAuthor() {
+  const u = state.user || {};
+  const rec = state.userPersonRecord || {};
+  return {
+    uid: u.uid || null,
+    email: u.email || rec.email || null,
+    // Prefer the roster display name, then the Google profile name, then the
+    // email local-part. Never blank.
+    name: rec.name || u.displayName || ((u.email || rec.email || '').split('@')[0]) || 'Unknown'
+  };
+}
+// Display name for a stored author object OR a record carrying createdBy/author.
+function authorName(obj) {
+  if (!obj) return 'Unknown';
+  const a = obj.createdBy || obj.author || obj;
+  return stripHTML(a.name || a.email || 'Unknown');
+}
 
 // ── SECURITY: Strip HTML/XSS from any string before rendering ──
 function stripHTML(str) {
@@ -1486,6 +1512,7 @@ function selectCategory(catId) {
     document.getElementById('cat-header-name').textContent = cat.name;
     const count = countSessions(catId);
     document.getElementById('cat-header-count').textContent = `${count} session${count!==1?'s':''}`;
+    document.getElementById('cat-header-author').textContent = '';
   }
   showEmpty();
   closeSidebar(); // collapse drawer on mobile after selection
@@ -1758,6 +1785,7 @@ function renderHist() {
       <div class="hist-q">${highlightMatch(stripHTML(s.firstQuestion || 'Session'), searchQuery)}</div>
       <div class="hist-meta">
         ${cat ? `<span class="hist-cat-emoji">${stripHTML(cat.emoji || '📁')}</span>${stripHTML(cat.name)}` : ''}
+        ${s.createdBy ? `<span>${authorName(s)}</span>` : ''}
         <span>${new Date(s.updatedAt).toLocaleDateString()}</span>
         ${s.hasAcknowledged ? '<span class="hist-ack">ACKNOWLEDGED</span>' : ''}
       </div>
@@ -1807,9 +1835,10 @@ async function loadSession(sid) {
     document.getElementById('cat-header-name').textContent = cat.name;
     document.getElementById('cat-header-count').textContent = `${countSessions(s.category)} sessions`;
   }
+  document.getElementById('cat-header-author').textContent = s.createdBy ? 'started by ' + authorName(s) : '';
 
   (s.exchanges || []).forEach(ex => {
-    addUserBubble(ex.question);
+    addUserBubble(ex.question, ex.author);
     addBotCard(ex, false);
   });
   updateMemCount();
@@ -1890,11 +1919,12 @@ function updateMemCount() {
   document.getElementById('mem-count').textContent = `${count} exchange${count!==1?'s':''}`;
 }
 
-function addUserBubble(q) {
+function addUserBubble(q, author) {
   const log = document.getElementById('chat-log');
   const d = document.createElement('div');
   d.className = 'msg-user';
-  d.innerHTML = `<div class="msg-user-bubble">${stripHTML(q)}</div>`;
+  const who = author ? authorName({author}) : '';
+  d.innerHTML = `${who ? `<div class="msg-user-author">${who}</div>` : ''}<div class="msg-user-bubble">${stripHTML(q)}</div>`;
   log.appendChild(d);
   d.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -2082,6 +2112,7 @@ async function saveSession(question, newExchange, isUpdate=false, catId=null) {
       id: activeSessionId,
       category: catId,
       firstQuestion: question,
+      createdBy: currentAuthor(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       history: [],
@@ -2131,7 +2162,7 @@ async function ask(deepRequested) {
   const userSelectedCat = activeCategory && !activeSessionId ? activeCategory : null;
   const aiShouldClassify = !userSelectedCat && !activeSessionId;
 
-  addUserBubble(q);
+  addUserBubble(q, currentAuthor());
 
   const thinkDiv = document.createElement('div');
   thinkDiv.className = 'msg-bot';
@@ -2194,9 +2225,13 @@ async function ask(deepRequested) {
       document.getElementById('cat-header-emoji').textContent = cat.emoji || '📁';
       document.getElementById('cat-header-name').textContent = cat.name;
     }
+    // Show who started this session (existing creator, or the current user if new).
+    const _sess = sessions[activeSessionId];
+    document.getElementById('cat-header-author').textContent =
+      'started by ' + authorName(_sess && _sess.createdBy ? _sess : { createdBy: currentAuthor() });
 
     const exId = 'ex-' + Date.now();
-    const exchange = {id:exId, question:q, result:r, rawResponse:raw, acknowledged:false, debated:false, timestamp:Date.now()};
+    const exchange = {id:exId, question:q, author:currentAuthor(), result:r, rawResponse:raw, acknowledged:false, debated:false, timestamp:Date.now()};
 
     thinkDiv.remove();
     addBotCard(exchange);
