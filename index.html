@@ -378,7 +378,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.16</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.17</div>
 </div>
 
 <!-- APP -->
@@ -463,7 +463,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.16</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.17</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
@@ -574,7 +574,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.16';
+const APP_VERSION = 'Rev 6.17';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -644,11 +644,12 @@ const canModerate = () => isAdmin() || isModerator();   // edit cats, ack, edit/
 const canAddPeople = () => isAdmin();                    // manage People modal
 const canDataManage = () => isAdmin();                   // export/restore
 
-// ── AUTHOR ATTRIBUTION (Rev 6.16) ──
+// ── AUTHOR ATTRIBUTION (Rev 6.17) ──
 // Veritas is a shared board: every roster member sees all sessions, and the
 // point is to argue a perspective and let others weigh the proof. So every
 // session and every exchange is stamped with WHO posted it, and the UI shows
-// it ("who said what"). Records created before 6.16 have no author → "Unknown".
+// it ("who said what"). Records created before attribution shipped have no
+// author and simply omit the label.
 function currentAuthor() {
   const u = state.user || {};
   const rec = state.userPersonRecord || {};
@@ -666,6 +667,12 @@ function authorName(obj) {
   const a = obj.createdBy || obj.author || obj;
   return stripHTML(a.name || a.email || 'Unknown');
 }
+// Edit/delete (move category, delete) permission for a session: the post's
+// AUTHOR, or a moderator/admin. Mirrors the Firebase rule on
+// veritas/sessions/$sid (.write = author-uid match OR mod/root). Legacy
+// sessions (no createdBy) have no known author → only moderators can manage.
+const isSessionAuthor = (s) => !!(s && s.createdBy && state.user && s.createdBy.uid === state.user.uid);
+const canEditSession  = (s) => isSessionAuthor(s) || canModerate();
 
 // ── SECURITY: Strip HTML/XSS from any string before rendering ──
 function stripHTML(str) {
@@ -1646,21 +1653,26 @@ function showCtxMenu(e, sid) {
   menu.className = 'ctx-menu';
   ctxMenu = menu;
 
-  menu.innerHTML = '<div class="ctx-menu-title">Move to Category</div>';
+  const editable = canEditSession(sessions[sid]);
 
-  categories.forEach(cat => {
-    const item = document.createElement('div');
-    item.className = 'ctx-item';
-    item.innerHTML = `<span class="ctx-emoji">${stripHTML(cat.emoji || '📁')}</span>${stripHTML(cat.name)}`;
-    item.onclick = () => { moveSessionToCategory(sid, cat.id); removeCtxMenu(); };
-    menu.appendChild(item);
-  });
+  if (!editable) {
+    // Not the author and not a moderator → read-only (can still open & read it).
+    menu.innerHTML = '<div class="ctx-menu-title">🔒 Read-only — only the author or a moderator can move or delete this post</div>';
+  } else {
+    menu.innerHTML = '<div class="ctx-menu-title">Move to Category</div>';
 
-  const sep = document.createElement('div');
-  sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
-  menu.appendChild(sep);
+    categories.forEach(cat => {
+      const item = document.createElement('div');
+      item.className = 'ctx-item';
+      item.innerHTML = `<span class="ctx-emoji">${stripHTML(cat.emoji || '📁')}</span>${stripHTML(cat.name)}`;
+      item.onclick = () => { moveSessionToCategory(sid, cat.id); removeCtxMenu(); };
+      menu.appendChild(item);
+    });
 
-  if (canModerate()) {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'height:1px;background:var(--border);margin:4px 0';
+    menu.appendChild(sep);
+
     const del = document.createElement('div');
     del.className = 'ctx-item ctx-danger';
     del.innerHTML = '🗑 Delete Session';
@@ -1679,6 +1691,7 @@ function showCtxMenu(e, sid) {
 
 async function moveSessionToCategory(sid, catId) {
   if (!sessions[sid]) return;
+  if (!canEditSession(sessions[sid])) { showToast('🔒 Only the author or a moderator can move this post'); return; }
   sessions[sid].category = catId;
   sessions[sid].updatedAt = Date.now();
   await db.ref('veritas/sessions/' + sid + '/category').set(catId);
@@ -1690,6 +1703,8 @@ async function moveSessionToCategory(sid, catId) {
 }
 
 async function deleteSession(sid) {
+  if (!sessions[sid]) return;
+  if (!canEditSession(sessions[sid])) { showToast('🔒 Only the author or a moderator can delete this post'); return; }
   if (!confirm('Delete this session?')) return;
   if (activeSessionId === sid) {
     activeSessionId = null;
