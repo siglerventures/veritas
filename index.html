@@ -151,9 +151,21 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 #ack-list{padding:8px;max-height:180px;overflow-y:auto;}
 #ack-list::-webkit-scrollbar{width:3px;}
 #ack-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-.ack-item{padding:6px 10px;border-radius:6px;background:rgba(106,74,154,0.1);border:1px solid rgba(106,74,154,0.2);margin-bottom:4px;}
-.ack-q{font-size:11px;color:var(--purple-light);line-height:1.4;}
+.ack-item{padding:6px 10px;border-radius:6px;background:rgba(106,74,154,0.1);border:1px solid rgba(106,74,154,0.22);margin-bottom:4px;cursor:pointer;transition:background 0.12s,border-color 0.12s;}
+.ack-item:hover{background:rgba(168,128,232,0.16);border-color:rgba(168,128,232,0.45);}
+.ack-q{font-size:11px;color:#cdcbd6;line-height:1.4;}
 .ack-score{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px;}
+/* Acknowledged-fact detail modal */
+.ackd-q{font-family:var(--font-display);font-size:18px;color:var(--text);line-height:1.3;margin-bottom:12px;}
+.ackd-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.ackd-score{font-size:12px;font-family:var(--font-mono);}
+.ackd-why{font-size:11px;color:var(--text2);font-family:var(--font-mono);margin-bottom:14px;}
+.ackd-direct{font-family:var(--font-display);font-size:15px;color:var(--accent3);line-height:1.3;margin-bottom:10px;}
+.ackd-summary{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:14px;}
+.ackd-meta{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text2);margin-bottom:12px;}
+.ackd-k{color:var(--text3);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-right:6px;}
+.ackd-reasoning{font-size:12px;color:var(--text2);line-height:1.55;border-left:2px solid var(--border2);padding-left:12px;margin-bottom:8px;}
+.ackd-foot{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:6px;}
 .no-ack{font-size:11px;color:var(--text3);text-align:center;padding:12px;font-style:italic;}
 
 /* MAIN */
@@ -379,7 +391,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.19</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.20</div>
 </div>
 
 <!-- APP -->
@@ -464,7 +476,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.19</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.20</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
@@ -571,11 +583,20 @@ footer a.footer-link:hover{color:var(--accent);}
   </div>
 </div>
 
+<!-- ACKNOWLEDGED-FACT DETAIL (Rev 6.20) -->
+<div class="modal-overlay" id="ackFactModal" onclick="if(event.target===this) closeAckFact()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAckFact()">✕</button>
+    <div class="modal-subtitle">✓ Acknowledged Fact</div>
+    <div id="ackFactBody"></div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.19';
+const APP_VERSION = 'Rev 6.20';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -645,7 +666,7 @@ const canModerate = () => isAdmin() || isModerator();   // edit cats, ack, edit/
 const canAddPeople = () => isAdmin();                    // manage People modal
 const canDataManage = () => isAdmin();                   // export/restore
 
-// ── AUTHOR ATTRIBUTION (Rev 6.19) ──
+// ── AUTHOR ATTRIBUTION (Rev 6.20) ──
 // Veritas is a shared board: every roster member sees all sessions, and the
 // point is to argue a perspective and let others weigh the proof. So every
 // session and every exchange is stamped with WHO posted it, and the UI shows
@@ -1874,13 +1895,59 @@ function renderAck() {
     return;
   }
   list.innerHTML = facts.slice(-10).reverse().map(f => `
-    <div class="ack-item">
+    <div class="ack-item" onclick="openAckFact('${f.id}')" title="Click to see how this was acknowledged">
       <div class="ack-q">${highlightMatch(stripHTML(f.question), searchQuery)}</div>
       <div class="ack-score">${f.score}% · ${new Date(f.savedAt).toLocaleDateString()}</div>
     </div>
   `).join('');
   document.getElementById('ack-count').textContent = `${acknowledgedFacts.length} acknowledged`;
   if (isOpen) list.style.display = 'block';
+}
+
+// Open a saved acknowledged fact: show the topic + how it earned acknowledgment
+// (verdict, ≥85% confidence, summary, and — if the source exchange is still in
+// memory — its evidence/sources/reasoning).
+function openAckFact(id) {
+  const f = acknowledgedFacts.find(x => x.id === id);
+  if (!f) return;
+  // Enrich from the originating exchange if it's still loaded.
+  let ex = null, sid = null;
+  for (const k in sessions) {
+    const hit = (sessions[k].exchanges || []).find(e => e.id === id);
+    if (hit) { ex = hit; sid = k; break; }
+  }
+  const r = (ex && ex.result) || {};
+  const cat = categories.find(c => c.id === f.category);
+  const score = (f.score != null) ? f.score : Math.round(r.confidence_score || 0);
+  const col = scoreColor(score);
+  const evidence = (r.evidence_type || []).join(', ');
+  const sources = r.corroborating_sources;
+  const reasoning = r.confidence_reasoning;
+  const direct = r.direct_answer;
+  document.getElementById('ackFactBody').innerHTML = `
+    <div class="ackd-q">${stripHTML(f.question)}</div>
+    <div class="ackd-row">
+      <span class="verdict-pill ${verdictClass(f.verdict)}">${stripHTML(f.verdict || 'UNKNOWN')}</span>
+      <span class="ackd-score" style="color:${col}">${score}% confidence</span>
+      <span class="ack-badge">ACKNOWLEDGED</span>
+    </div>
+    <div class="ackd-why">Acknowledged because it scored ≥85% on documented evidence.</div>
+    ${direct ? `<div class="ackd-direct">${stripHTML(direct)}</div>` : ''}
+    <div class="ackd-summary">${stripHTML(f.summary || r.summary || '')}</div>
+    ${(sources != null || evidence) ? `<div class="ackd-meta">
+      ${sources != null ? `<div><span class="ackd-k">Sources</span>${sources} independent</div>` : ''}
+      ${evidence ? `<div><span class="ackd-k">Evidence</span>${stripHTML(evidence)}</div>` : ''}
+    </div>` : ''}
+    ${reasoning ? `<div class="ackd-reasoning">${stripHTML(reasoning)}</div>` : ''}
+    <div class="ackd-foot">${cat ? `${stripHTML(cat.emoji || '📁')} ${stripHTML(cat.name)} · ` : ''}acknowledged ${new Date(f.savedAt).toLocaleDateString()}</div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">
+      ${sid ? `<button class="dm-btn" onclick="closeAckFact(); loadSession('${sid}');">Open full session</button>` : ''}
+      <button class="dm-btn" onclick="closeAckFact()">Close</button>
+    </div>`;
+  document.getElementById('ackFactModal').classList.add('open');
+}
+function closeAckFact() {
+  document.getElementById('ackFactModal').classList.remove('open');
 }
 
 function showEmpty() {
