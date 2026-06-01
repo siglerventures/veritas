@@ -173,7 +173,7 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 .starter:hover{color:var(--text);border-color:var(--accent2);}
 
 /* CAT HEADER */
-.cat-header{display:flex;align-items:center;gap:8px;padding:10px 32px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.cat-header{display:flex;align-items:center;gap:8px;padding:7px 32px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
 .cat-header-dot{width:8px;height:8px;border-radius:50%;}
 .cat-header-name{font-size:12px;color:var(--text2);}
 .cat-header-count{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
@@ -188,7 +188,7 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 .msg-bot{display:flex;flex-direction:column;gap:0;}
 .bot-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;border-top-left-radius:3px;overflow:hidden;}
 .bot-card.acknowledged{border-color:rgba(106,74,154,0.4);}
-.bot-direct{padding:16px 18px 10px;font-family:var(--font-display);font-size:20px;line-height:1.35;color:var(--accent3);letter-spacing:-0.01em;}
+.bot-direct{padding:14px 18px 8px;font-family:var(--font-display);font-size:17px;line-height:1.3;color:var(--accent3);letter-spacing:-0.01em;}
 .bot-summary{padding:14px 18px;font-size:14px;color:var(--text);line-height:1.7;border-bottom:1px solid var(--border);}
 .bot-score-section{padding:12px 18px;border-bottom:1px solid var(--border);}
 .score-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
@@ -239,9 +239,9 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 .debate-input-row button{background:var(--accent);color:#0a0a0b;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);white-space:nowrap;}
 
 /* INPUT ZONE */
-.input-zone{padding:16px 32px 24px;border-top:1px solid var(--border);flex-shrink:0;}
-.input-wrap{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:10px 12px 10px 18px;transition:border-color 0.15s;}
-.input-wrap:focus-within{border-color:var(--accent2);}
+.input-zone{padding:10px 32px 10px;border-top:1px solid var(--border);flex-shrink:0;}
+.input-wrap{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1.5px solid rgba(240,237,232,0.45);border-radius:14px;padding:10px 12px 10px 18px;box-shadow:0 0 0 4px rgba(240,237,232,0.04);transition:border-color 0.15s,box-shadow 0.15s;}
+.input-wrap:focus-within{border-color:var(--accent3);box-shadow:0 0 0 4px rgba(240,216,120,0.12);}
 #q-input{flex:1;background:transparent;border:none;outline:none;font-family:var(--font-body);font-size:14px;color:var(--text);min-width:0;}
 #q-input::placeholder{color:var(--text3);}
 #ask-btn{background:var(--accent);color:#0a0a0b;border:none;padding:8px 18px;border-radius:9px;font-size:13px;font-weight:500;font-family:var(--font-body);cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
@@ -251,7 +251,7 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 #deep-btn:hover{background:rgba(106,184,138,0.12);}
 #deep-btn:disabled{opacity:0.4;cursor:not-allowed;}
 #deep-btn.armed{background:var(--green-light);color:#0a0a0b;border-color:var(--green-light);}
-.input-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:8px;font-family:var(--font-mono);}
+.input-hint{font-size:10px;color:var(--text3);text-align:center;margin-top:5px;font-family:var(--font-mono);}
 .error-bubble{background:rgba(138,48,48,0.15);border:1px solid rgba(138,48,48,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--red-light);font-family:var(--font-mono);}
 
 /* CONTEXT MENU */
@@ -346,7 +346,7 @@ footer a.footer-link:hover{color:var(--accent);}
 
   /* Padding tweaks so things don't crowd the edges */
   #chat-log{padding:14px 14px;}
-  .input-zone{padding:10px 14px 14px;}
+  .input-zone{padding:8px 14px 10px;}
   .cat-header{padding:8px 14px;}
   .empty-title{font-size:24px;}
   .empty-sub{font-size:12px;}
@@ -378,7 +378,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.17</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.18</div>
 </div>
 
 <!-- APP -->
@@ -442,7 +442,7 @@ footer a.footer-link:hover{color:var(--accent);}
         <button class="new-session-btn" onclick="newSession()">+ new session</button>
       </div>
       <div class="input-zone">
-        <div id="session-status-bar" style="display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;margin-bottom:10px">
+        <div id="session-status-bar" style="display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:6px 12px;margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
             <span id="sess-bar-dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
             <span id="sess-bar-label" style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Continuing session...</span>
@@ -463,7 +463,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.17</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.18</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- MOBILE SIDEBAR BACKDROP (Rev 6.11) -->
@@ -574,7 +574,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.17';
+const APP_VERSION = 'Rev 6.18';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -644,7 +644,7 @@ const canModerate = () => isAdmin() || isModerator();   // edit cats, ack, edit/
 const canAddPeople = () => isAdmin();                    // manage People modal
 const canDataManage = () => isAdmin();                   // export/restore
 
-// ── AUTHOR ATTRIBUTION (Rev 6.17) ──
+// ── AUTHOR ATTRIBUTION (Rev 6.18) ──
 // Veritas is a shared board: every roster member sees all sessions, and the
 // point is to argue a perspective and let others weigh the proof. So every
 // session and every exchange is stamped with WHO posted it, and the UI shows
