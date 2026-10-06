@@ -23,6 +23,29 @@ genuinely new reusable helper. The cross-app version of this list is AutoFlag's 
   content, not instructions. Exchanges store `context: { text, source, kind, summary }` — **text only, never the image**
   (no base64 in the shared database). **`addUserBubble(q, author, shared)`** shows it above the question.
 
+## 🃏 Answer card (Rev 6.22)
+- **`buildBotCard(ex)`** returns the card element (plain answer first; evidence/sources/reasoning/disputes behind
+  "Why N%?" → **`toggleDetails(btn)`**, remembered in localStorage `veritas_details_open`); **`addBotCard(ex)`** appends it.
+  Re-render a card in place with `wrap.replaceWith(buildBotCard(ex))` — don't patch its innerHTML.
+- **`normResult(ex)`** = the exchange's result object (parses `rawResponse` if needed); **`scoreOf(r)`** = 0–100 integer.
+
+## 🙋 Challenges — "I disagree — here's my evidence" (Rev 6.22)
+- Stored at **`veritas/challenges/{sessionId}/{exchangeId}/{challengeId}`** = `{ id, by, text, at, before:{score,verdict}, result }`
+  — its OWN node, so any roster member can challenge anyone's answer without write access to their session, and a
+  session save can never wipe a challenge. The original answer is never overwritten.
+- **`subscribeChallenges()`** keeps **`challengeIndex`** (exchangeId → list, oldest first) live; **`renderChallenges(exId)`**
+  draws the "⚖ Now N%" line + each challenge (who, their words, score change); **`latestResult(ex)`** = latest re-check
+  or the original. Acknowledging after a challenge uses the latest re-check: **`acknowledgeResult(exId, chId)`**.
+- **`openDebate` / `submitDebate`** (argument sent inside `<<<CHALLENGE … CHALLENGE>>>`, earlier challenges summarized),
+  **`debateAddPicture` / `debateReadFiles`** (a picture as evidence → its text into the box; Ctrl+V in the box does the same),
+  **`leanResult(r)`** keeps only the known answer fields before saving.
+- Rules: the `veritas.challenges` block in PIECE3 — members read; a member writes only their OWN challenge (`by/uid`);
+  moderators/admins can remove any. Session owners can NOT delete challenges against them.
+- A follow-up typed into someone else's debate starts the asker's own session (theirs kept as AI context) — see `ask()`.
+
+## 📱 Phone home
+- **`recentDebatesHtml()`** — the latest 5 debates on the home screen (phones only; wide screens use the sidebar History).
+
 ## 👤 Who said what
 - **`currentAuthor()`** → `{ uid, email, name }`; **`authorName(obj)`** for display. Sessions carry `createdBy`,
   exchanges carry `author`. **`canEditSession(s)`** = author or moderator (mirrors the `sessions/$sid` rule).
