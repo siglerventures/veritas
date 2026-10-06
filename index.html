@@ -175,11 +175,13 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 #chat-log::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 
 /* EMPTY */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 0;text-align:center;gap:20px;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:22px 0 32px;text-align:center;gap:16px;}
 .empty-icon{width:52px;height:52px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;background:var(--surface2);}
 .empty-icon svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:1.5;}
-.empty-title{font-family:var(--font-display);font-size:20px;color:var(--text);}
-.empty-sub{font-size:13px;color:var(--text2);max-width:340px;line-height:1.7;}
+.empty-title{font-family:var(--font-display);font-size:22px;color:var(--text);line-height:1.3;}
+.empty-sub{font-size:14px;color:var(--text2);max-width:860px;line-height:1.7;}
+.empty-snap{margin-top:-6px;}
+.empty-snap strong{color:var(--text);font-weight:500;}
 .starters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:540px;}
 .starter{font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:7px 14px;border-radius:20px;cursor:pointer;transition:all 0.15s;font-family:var(--font-body);}
 .starter:hover{color:var(--text);border-color:var(--accent2);}
@@ -296,12 +298,7 @@ mark.search-hit{background:rgba(200,181,96,0.3);color:var(--accent3);padding:0 2
 #drop-overlay.on{display:flex;}
 #drop-overlay div{border:2px dashed var(--accent3);border-radius:18px;padding:40px 56px;color:var(--text);font-size:18px;text-align:center;}
 /* home-screen "snap something" tile */
-.snap-tile{display:flex;flex-direction:column;align-items:center;gap:10px;background:var(--surface2);border:1.5px dashed rgba(240,237,232,0.35);border-radius:16px;padding:20px 24px;max-width:460px;width:100%;cursor:pointer;transition:border-color 0.15s;}
-.snap-tile:hover{border-color:var(--accent3);}
-.snap-tile-title{font-size:15px;color:var(--text);font-weight:500;}
-.snap-tile-sub{font-size:12px;color:var(--text2);line-height:1.6;}
-.snap-tile-btn{background:var(--accent);color:#0a0a0b;border:none;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);}
-.starters-label{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:-8px;}
+.starters-label{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin:8px 0 -6px;}
 .has-ctx .empty-state{display:none;}   /* the card is up — the home screen under it is just noise */
 
 /* ANSWER CARD — plain answer first, details behind a tap (Rev 6.22) */
@@ -490,8 +487,9 @@ footer a.footer-link:hover{color:var(--accent);}
   #ask-btn,#deep-btn{flex:1;min-width:0;}
   #snap-btn{padding:8px 14px;font-size:18px;}
   .recent-debates{display:block;}
-  .empty-state.has-recent{padding:20px 0;gap:16px;}
-  .empty-state.has-recent .empty-icon,.empty-state.has-recent .empty-sub{display:none;}   /* returning people know what Veritas is */
+  .empty-state{padding:14px 0 24px;gap:14px;}
+  .empty-title{font-size:20px;}
+  .empty-state.has-recent .empty-sub{display:none;}   /* returning people know what Veritas is — room for Recent debates */
   #menu-btn{gap:6px;font-size:16px;}
   .menu-label{display:inline;font-size:13px;}
   #mem-count{display:none;}   /* room for "☰ Debates" */
@@ -509,8 +507,7 @@ footer a.footer-link:hover{color:var(--accent);}
   .cat-header{flex-wrap:wrap;}
   .cat-header-author{display:none;}   /* the author already shows above each question */
   .msg-ctx{max-width:92%;}
-  .snap-tile{padding:18px 16px;}
-
+  
   /* Modals: full screen feel */
   .modal{padding:20px;border-radius:14px;}
   .modal-title{font-size:18px;}
@@ -533,14 +530,14 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.23</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.24</div>
 </div>
 
 <!-- APP -->
 <div id="app">
   <header>
     <button id="menu-btn" onclick="toggleSidebar()" aria-label="Debates, categories and acknowledged facts">☰ <span class="menu-label">Debates</span></button>
-    <div class="logo" onclick="goHome()" title="Return to main page">
+    <div class="logo" onclick="hardRefresh()" title="Refresh Veritas and go to the main page">
       <span class="logo-word">Veritas</span>
       <span class="logo-tag">Evidence Intelligence</span>
     </div>
@@ -623,7 +620,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.23</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.24</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DRAG A PICTURE ANYWHERE (Rev 6.21) -->
@@ -746,7 +743,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.23';
+const APP_VERSION = 'Rev 6.24';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -2165,24 +2162,26 @@ function closeAckFact(noHistory) {
   factPushed = false;
 }
 
+// Veritas logo = a hard refresh back to the main page (Rev 6.24): re-download the page past the browser
+// cache, then load it with no #link, so a stuck or out-of-date screen always clears. Sign-in survives it.
+async function hardRefresh() {
+  const typed = (document.getElementById('q-input')?.value || '').trim()
+    || [...document.querySelectorAll('.debate-text')].some(t => t.value.trim());
+  if (typed && !confirm('Refresh Veritas? What you typed will be cleared.')) return;
+  try { await fetch(location.pathname, { cache: 'reload', credentials: 'same-origin' }); } catch (_) {}
+  location.replace(location.pathname + location.search);
+}
+
 function showEmpty() {
   const log = document.getElementById('chat-log');
   const catStarters = STARTERS;
   log.innerHTML = `
     <div class="empty-state${Object.keys(sessions || {}).length ? ' has-recent' : ''}">
-      <div class="empty-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      </div>
-      <div class="empty-title">Ask anything. Get only the truth.</div>
+      <div class="empty-title">Ask anything. Debate with facts. Find the truth together.</div>
       <div class="empty-sub">Veritas scores every answer on documented evidence only — no spin, no bias. If you can prove it scores 85%+, it gets permanently acknowledged.</div>
+      <div class="empty-sub empty-snap"><strong>📷 Snap, paste or drop anything to debate it.</strong> A verse on a screen, a headline, a post, a page — Veritas reads it and offers it up for debate. On a computer you can also paste a screenshot (Ctrl+V) or drag a picture here.</div>
       ${recentDebatesHtml()}
-      <div class="snap-tile" onclick="snapPick()">
-        <div style="font-size:28px;line-height:1">📷</div>
-        <div class="snap-tile-title">Snap, paste or drop anything to debate it</div>
-        <div class="snap-tile-sub">A verse on a screen, a headline, a post, a page — Veritas reads it and offers it up for debate. On a computer you can also paste a screenshot (Ctrl+V) or drag a picture here.</div>
-        <button class="snap-tile-btn" onclick="event.stopPropagation();snapPick()">📷 Take or choose a picture</button>
-      </div>
-      <div class="starters-label">or try one of these</div>
+      <div class="starters-label">Try one of these</div>
       <div class="starters">${catStarters.map(s=>`<button class="starter" onclick="useStarter(this)">${s}</button>`).join('')}</div>
     </div>`;
 }
