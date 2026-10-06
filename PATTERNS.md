@@ -89,6 +89,11 @@ genuinely new reusable helper. The cross-app version of this list is AutoFlag's 
 - Topic bar: the scale, "How scoring works" (**`howText()`**, shown until the first point — localStorage `veritas_how_seen`), each
   side's credited case + 🎯 To score next, 🏅. Point cards: ✔ What counts · ✖ Not shown yet · 🎯 To score more; the long text is under
   **`refDetails(r)`** ("Veritas's full reasoning"). Exchange turns show the one-line answer; the summary moves under "Full answer…".
+- **▸ Folding turns (Rev 6.28).** Every turn folds to one line (`.turn.collapsed`: who · side + points · their words · scale move,
+  or the question + verdict) — **`foldTurn(el, t, open)`** adds the summary (**`turnSummary(t)`**) and the tap / Enter toggle on
+  `.turn-head`. **`turnIsOpen(t, newest)`**: a pending / unsaved point is always open; then what the person chose (`turnFold.open`),
+  then Expand / Collapse all (`turnFold.all`, **`foldAllTurns(open)`**), else only the NEWEST turn. A linked turn (`renderDebate`
+  `focus`) opens. `turnFold` resets when you leave the debate.
 
 ## 📷 Pictures kept with a debate — Firebase Storage
 - **`uploadDebateImages(sid, files)`** → `[{ url, path }]` under **`veritas/debates/<topic_slug>_<last 4 of id>/<date>_<name>.jpg`**

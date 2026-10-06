@@ -449,6 +449,24 @@ body.in-debate #session-status-bar{display:none !important;}
 .turn-ex .bot-card .bot-summary{display:none;}
 .turn-ex .bot-card .bot-details .bot-summary{display:block;margin:0 0 10px;}
 @media (max-width:768px){ .tb-case{grid-template-columns:1fr;} .sc-track{min-width:100px;} }
+/* ▸ Rev 6.28 — every turn folds to one line; tap to open (the newest opens by itself) */
+.turn .turn-head{cursor:pointer;user-select:none;border-radius:8px;padding:2px 4px;margin:0 -4px;}
+.turn .turn-head:hover{background:var(--surface2);}
+.turn-chev{color:var(--text3);font-size:11px;width:12px;display:inline-block;transition:transform .15s ease;}
+.turn:not(.collapsed) .turn-chev{transform:rotate(90deg);}
+.turn-sum{display:none;flex:1 1 200px;min-width:0;align-items:center;gap:8px;}
+.turn.collapsed .turn-sum{display:flex;}
+.turn-sum .ts-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-family:var(--font-body,inherit);font-size:13px;}
+.turn-sum .stance,.turn-sum .sc-move,.turn-sum .verdict-pill{flex-shrink:0;}
+.turn.collapsed > :not(.turn-head){display:none !important;}
+.turn.collapsed{gap:0;}
+.turn.collapsed .turn-head{background:var(--surface);border:1px solid var(--border);padding:8px 12px;margin:0;}
+.turn.collapsed .turn-head:hover{border-color:var(--border2);}
+.turn-ex .bot-direct{font-size:15px;line-height:1.4;padding:12px 16px 6px;}
+.tb-fold{display:flex;gap:6px;}
+#chat-log.debate-log{gap:10px;}
+.turn.collapsed .turn-meta{display:none;}
+@media (max-width:768px){ .tb-fold .lbl{display:none;} .tb-fold .tb-btn{padding:3px 8px;font-size:13px;} .topic-bar.compact .tb-side{flex-direction:row;align-items:center;} .turn-sum{flex-basis:100%;} }
 
 
 /* 🔔 NOTIFICATIONS · 🔗 LINKS · 🗂 FILTERS (Rev 6.23) */
@@ -640,7 +658,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.27</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.28</div>
 </div>
 
 <!-- APP -->
@@ -731,7 +749,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.27</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.28</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DRAG A PICTURE ANYWHERE (Rev 6.21) -->
@@ -855,7 +873,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.27';
+const APP_VERSION = 'Rev 6.28';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -2859,6 +2877,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNotifs(
 let inDebate = false;
 let replyTarget = null;   // { turn: id, n: number, side: 'agree' | 'disagree' }
 let suppressCompactUntil = 0;   // our own scroll-to-latest mustn't collapse the pinned topic
+// ▸ Which turns are open (Rev 6.28). Default: only the newest turn (and a linked one); a turn you open or close
+// stays that way while the debate is open. Expand all / Collapse all set every turn.
+let turnFold = { sid: null, open: {}, all: null };
 
 const topicExchange = s => (s && Array.isArray(s.exchanges) && s.exchanges[0]) || null;
 const fmtWhen = t => t ? new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
@@ -2873,7 +2894,7 @@ function enterDebateView(on) {
   const ask = document.getElementById('ask-btn'), deep = document.getElementById('deep-btn');
   if (ask) ask.textContent = inDebate ? 'Post point' : 'Analyze';
   if (deep) deep.textContent = inDebate ? (window.matchMedia('(max-width: 768px)').matches ? '🔍 + Sources' : '🔍 Post + check sources') : '🔍 Deep Search';
-  if (!inDebate) setReplyTarget(null);
+  if (!inDebate) { setReplyTarget(null); document.getElementById('chat-log')?.classList.remove('debate-log'); turnFold = { sid: null, open: {}, all: null }; }
   renderCtx();   // refreshes the ask-box placeholder
 }
 
@@ -3039,6 +3060,17 @@ function renderTopicBar(sid, turns, sco) {
   tog.type = 'button';
   tog.onclick = e => { e.stopPropagation(); const c = !bar.classList.contains('compact'); bar.classList.toggle('compact', c); tog.textContent = c ? '▾ Show topic' : '▴ Hide'; };
   side.appendChild(tog);
+  if (turns.length > 1) {
+    const fold = vEl('div', 'tb-fold');
+    const ex = vEl('button', 'tb-btn', '⇕'); ex.type = 'button'; ex.title = 'Open every turn';
+    ex.appendChild(vEl('span', 'lbl', ' Expand all'));
+    ex.onclick = e => { e.stopPropagation(); foldAllTurns(true); };
+    const co = vEl('button', 'tb-btn', '⇳'); co.type = 'button'; co.title = 'Fold every turn to one line';
+    co.appendChild(vEl('span', 'lbl', ' Collapse all'));
+    co.onclick = e => { e.stopPropagation(); foldAllTurns(false); };
+    fold.append(ex, co);
+    side.appendChild(fold);
+  }
   if (!savedPics.length && !localPics['topic:' + sid] && canEditSession(s)) {
     const add = vEl('button', 'tb-btn', '📷 Add the picture');
     add.type = 'button'; add.title = 'Attach the picture this debate is about';
@@ -3111,6 +3143,9 @@ function howText() {
 
 function turnHead(t, extra) {
   const h = vEl('div', 'turn-head');
+  h.setAttribute('role', 'button'); h.tabIndex = 0;
+  h.title = 'Open / fold this turn';
+  h.appendChild(vEl('span', 'turn-chev', '▸'));
   h.appendChild(vEl('span', 'turn-n', '#' + t.n));
   h.appendChild(vEl('span', 'turn-who', authorName({ author: t.by })));
   h.appendChild(vEl('span', null, fmtWhen(t.at)));
@@ -3139,7 +3174,7 @@ function turnActs(t, isLatest, s) {
 function buildExTurn(t, isLatest, s, mineDebate) {
   const el = vEl('div', 'turn turn-ex' + (isLatest ? ' turn-latest' : ''));
   el.dataset.turn = t.id; el.dataset.exid = t.exId;
-  el.appendChild(turnHead(t, vEl('span', null, t.opening ? '· opening question — Veritas\'s first take' : '· question — doesn\'t move the scale')));
+  el.appendChild(turnHead(t, vEl('span', 'turn-meta', t.opening ? '· opening question — Veritas\'s first take' : '· question — doesn\'t move the scale')));
   if (!t.opening && hasMaterial(t.ex.context)) {
     const m = vEl('div', 'msg-ctx');
     m.append(vEl('div', 'msg-ctx-src', '📎 ' + (t.ex.context.source || 'Shared material')), vEl('div', 'msg-ctx-text', t.ex.context.text || t.ex.context.summary));
@@ -3265,9 +3300,15 @@ function renderDebate(sid, opts = {}) {
   const mineDebate = answerOwner(s, topicExchange(s)) === me;
   const latest = latestTurnWithResult(turns);
   log.innerHTML = '';
+  log.classList.add('debate-log');
+  if (turnFold.sid !== sid) turnFold = { sid, open: {}, all: null };
+  if (opts.focus) { const f = turns.find(x => x.id === opts.focus || x.exId === opts.focus); if (f) turnFold.open[f.id] = true; }
+  const newest = turns[turns.length - 1];
   turns.forEach(t => {
     const isLatest = latest && latest.id === t.id;
-    log.appendChild(t.kind === 'ex' ? buildExTurn(t, isLatest, s, mineDebate) : buildPointTurn(t, isLatest, s, mineDebate));
+    const el = t.kind === 'ex' ? buildExTurn(t, isLatest, s, mineDebate) : buildPointTurn(t, isLatest, s, mineDebate);
+    foldTurn(el, t, turnIsOpen(t, newest));
+    log.appendChild(el);
   });
   suppressCompactUntil = Date.now() + 700;
   if (opts.focus) focusExchange(opts.focus);
@@ -3285,6 +3326,57 @@ document.getElementById('chat-log').addEventListener('scroll', e => {
     const t = bar.querySelector('.tb-side .tb-btn'); if (t) t.textContent = '▾ Show topic';
   }
 });
+
+function turnIsOpen(t, newest) {
+  if (t.kind === 'pt' && (t.ch.pending || t.ch.unsaved)) return true;
+  if (t.id in turnFold.open) return turnFold.open[t.id];
+  if (turnFold.all != null) return turnFold.all;
+  return !!newest && newest.id === t.id;
+}
+// One line for a folded turn: what was said + how it scored.
+function turnSummary(t) {
+  const sum = vEl('span', 'turn-sum');
+  if (t.kind === 'ex') {
+    const r = normResult(t.ex);
+    sum.appendChild(vEl('span', 'ts-text', t.ex.question || ''));
+    const v = vEl('span', 'verdict-pill ' + verdictClass(r.verdict), `${r.verdict || '?'} ${scoreOf(r)}%`);
+    sum.appendChild(v);
+  } else {
+    const r = t.ch.result || {};
+    if (r.stance === 'for' || r.stance === 'against') sum.appendChild(vEl('span', 'stance ' + r.stance, `${r.stance === 'for' ? '✅ For' : '❌ Against'} +${turnPts(r)}`));
+    else if (r.stance) sum.appendChild(vEl('span', 'stance neutral', '❔ Question'));
+    sum.appendChild(vEl('span', 'ts-text', String(t.ch.text || '').split(/\n\s*\nEvidence/)[0]));
+    if (t.scaleBefore != null && t.scaleAfter != null && t.scaleAfter !== t.scaleBefore) {
+      const d = t.scaleAfter - t.scaleBefore;
+      sum.appendChild(vEl('span', 'sc-move' + (d > 0 ? ' up' : ' down'), `${t.scaleBefore} → ${t.scaleAfter}`));
+    }
+  }
+  return sum;
+}
+function foldTurn(el, t, open) {
+  const head = el.querySelector('.turn-head');
+  if (!head) return;
+  head.appendChild(turnSummary(t));
+  el.classList.toggle('collapsed', !open);
+  head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const toggle = e => {
+    if (e.target.closest('button, a')) return;
+    const nowOpen = el.classList.contains('collapsed');
+    el.classList.toggle('collapsed', !nowOpen);
+    head.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+    turnFold.open[t.id] = nowOpen;
+  };
+  head.addEventListener('click', toggle);
+  head.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e); } });
+}
+function foldAllTurns(open) {
+  turnFold.all = open; turnFold.open = {};
+  document.querySelectorAll('#chat-log .turn').forEach(el => {
+    if (el.classList.contains('turn-pending')) return;
+    el.classList.toggle('collapsed', !open);
+    el.querySelector('.turn-head')?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+}
 
 function setReplyTarget(t) {
   replyTarget = t || null;
