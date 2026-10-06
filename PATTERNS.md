@@ -83,6 +83,12 @@ genuinely new reusable helper. The cross-app version of this list is AutoFlag's 
   (downscaled JPEG, readable folder per the standing rule; `stSlug`, `debateFolder`). **`saveTopicImages(sid, files)`** puts them on
   `exchanges/0/context/images`; points keep theirs in `images`. **`topicAddPicture(sid)`** = 📷 Add the picture on an older debate.
   Only the link is in the database — never image data.
+- **Rev 6.26 — a picture is never invisible.** **`localPics`** / **`localPicsSet(key, files, status, why)`** (key `topic:<sid>` or
+  `pt:<pointId>`) show a picture at once from the device (blob URL) while it saves; if saving fails it STAYS on screen with the
+  reason (**`picErrText(e)`** — a missing Storage rule reads "picture storage isn't switched on…") and ↻ Try again.
+  **`picsBlock(saved, key, cls, onRetry)`** = saved pictures, else the local ones + status line; **`retryPointPics(exId, chId, files)`**
+  stores a point's picture (first try and retry). **`openPic(url)`** = full-size viewer (tap / Esc closes); a stored link that won't
+  load shows "📷 Picture can't load" (`picsEl` onerror). `showToast(msg, ms)` takes an optional duration.
 - **Storage rule (Firebase console → Storage → Rules — added by Phil, Rev 6.25).** Inside `match /b/{bucket}/o { … }`:
   ```
   // Veritas: debate pictures (Rev 6.25). Signed-in users read; create-only images ≤ 5 MB.

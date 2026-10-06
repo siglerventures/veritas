@@ -359,7 +359,16 @@ body.in-debate #session-status-bar{display:none !important;}
 .topic-bar[hidden]{display:none;}
 .tb-top{display:flex;gap:12px;align-items:flex-start;}
 .tb-pics{display:flex;gap:6px;flex-shrink:0;}
-.tb-pics img{width:92px;height:68px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);cursor:zoom-in;}
+.tb-pics img{width:150px;height:110px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);cursor:zoom-in;}
+.pic-missing{display:inline-flex;align-items:center;justify-content:center;width:120px;height:60px;border:1px dashed var(--border2);border-radius:8px;font-size:11px;color:var(--text2);font-family:var(--font-mono);text-align:center;padding:4px;}
+.pics-wrap{display:flex;flex-direction:column;gap:4px;flex-shrink:0;max-width:100%;}
+.pics-wrap.local img{opacity:.85;}
+.pic-status{font-size:11px;font-family:var(--font-mono);color:var(--text2);line-height:1.5;}
+.pic-status.failed{color:#ffb4a8;max-width:320px;}
+.pic-status button{margin-left:6px;}
+#pic-viewer{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out;}
+#pic-viewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;}
+#pic-viewer .pv-close{position:absolute;top:12px;right:16px;font-size:26px;color:#fff;background:none;border:none;cursor:pointer;}
 .tb-main{flex:1;min-width:0;}
 .tb-label{font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.08em;}
 .tb-q{font-family:var(--font-display);font-size:17px;color:var(--text);line-height:1.35;margin-top:2px;}
@@ -379,7 +388,8 @@ body.in-debate #session-status-bar{display:none !important;}
 .tb-now{color:var(--text2);}
 .tb-people{margin-top:6px;font-size:12px;color:var(--text2);}
 .topic-bar.compact .tb-material,.topic-bar.compact .tb-claim,.topic-bar.compact .tb-people,.topic-bar.compact .tb-label{display:none;}
-.topic-bar.compact .tb-pics img{width:44px;height:36px;}
+.topic-bar.compact .tb-pics img{width:56px;height:42px;}
+.topic-bar.compact .pic-status:not(.failed){display:none;}
 .topic-bar.compact .tb-q{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .topic-bar.compact .tb-score{margin-top:6px;}
 /* turns */
@@ -390,7 +400,7 @@ body.in-debate #session-status-bar{display:none !important;}
 .turn-replyto{color:var(--text3);}
 .turn-msg{align-self:flex-start;max-width:85%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;border-top-left-radius:3px;padding:10px 14px;font-size:14px;color:var(--text);line-height:1.6;white-space:pre-wrap;}
 .turn-pics{display:flex;gap:6px;flex-wrap:wrap;}
-.turn-pics img{width:120px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);cursor:zoom-in;}
+.turn-pics img{width:160px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);cursor:zoom-in;}
 .pt-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .pt-score{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);}
 .stance{font-family:var(--font-mono);font-size:11px;font-weight:700;border-radius:10px;padding:2px 9px;}
@@ -556,7 +566,8 @@ footer a.footer-link:hover{color:var(--accent);}
   #mem-count{display:none;}   /* room for "☰ Debates" */
   .notif-btn{margin-left:auto;}
   .topic-bar{padding:8px 14px;max-height:38vh;}
-  .tb-pics img{width:64px;height:50px;}
+  .tb-pics img{width:96px;height:72px;}
+  .turn-pics img{width:120px;height:90px;}
   .tb-q{font-size:15px;}
   .turn-msg{max-width:100%;}
   .turn-acts .action-btn,.turn-acts .action-btn.debate-btn,.turn-acts .action-btn.link-btn{flex:1 1 0;padding:8px 6px;font-size:12px;}
@@ -597,7 +608,7 @@ footer a.footer-link:hover{color:var(--accent);}
     <button type="submit" autocomplete="current-password">Sign in with Google</button>
   </form>
   <div id="pw-err"></div>
-  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.25</div>
+  <div id="pw-rev" style="margin-top:16px;font-size:11px;color:#4a4845;letter-spacing:1px">Rev 6.26</div>
 </div>
 
 <!-- APP -->
@@ -688,7 +699,7 @@ footer a.footer-link:hover{color:var(--accent);}
     </div>
   </div>
 
-  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.25</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
+  <footer>Philinity Veritas <span class="rev-pill" id="rev-pill">© Rev 6.26</span> <a class="footer-link" id="dataBtn" onclick="openDataModal()">📦 Data</a> <a class="footer-link" id="peopleBtn" onclick="openPeopleModal()" style="display:none">👥 People</a> <a class="footer-link" onclick="signOut()">🚪 Sign Out</a></footer>
 </div>
 
 <!-- DRAG A PICTURE ANYWHERE (Rev 6.21) -->
@@ -812,7 +823,7 @@ footer a.footer-link:hover{color:var(--accent);}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script>
-const APP_VERSION = 'Rev 6.25';
+const APP_VERSION = 'Rev 6.26';
 
 // Keep version displays in sync with APP_VERSION
 document.addEventListener('DOMContentLoaded', () => {
@@ -1977,7 +1988,7 @@ async function deleteSession(sid) {
   showToast('🗑 Session deleted');
 }
 
-function showToast(msg) {
+function showToast(msg, ms) {
   let t = document.getElementById('veritas-toast');
   if (!t) {
     t = document.createElement('div');
@@ -1988,7 +1999,7 @@ function showToast(msg) {
   t.textContent = msg;
   t.style.transform = 'translateX(-50%) translateY(0)';
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.style.transform = 'translateX(-50%) translateY(100px)'; }, 2500);
+  t._timer = setTimeout(() => { t.style.transform = 'translateX(-50%) translateY(100px)'; }, ms || 2500);
 }
 
 document.addEventListener('click', removeCtxMenu);
@@ -2874,16 +2885,69 @@ function latestTurnWithResult(turns) {
   return null;
 }
 
-function picsEl(images, cls) {
+function picsEl(images, cls, local) {
   const box = vEl('div', cls);
   (images || []).forEach(im => {
-    if (!im || !/^https:\/\//.test(im.url || '')) return;
+    if (!im || !(local ? /^blob:/ : /^https:\/\//).test(im.url || '')) return;
     const img = document.createElement('img');
-    img.src = im.url; img.alt = 'Picture'; img.loading = 'lazy'; img.title = 'Open full size';
-    img.onclick = e => { e.stopPropagation(); window.open(im.url, '_blank', 'noopener'); };
+    img.src = im.url; img.alt = 'Picture'; img.loading = 'lazy'; img.title = 'Tap to see it full size';
+    img.onclick = e => { e.stopPropagation(); openPic(im.url); };
+    img.onerror = () => {   // stored but can't be shown (e.g. the Storage read rule is missing) — say so, not a broken icon
+      const ph = vEl('span', 'pic-missing', '📷 Picture can\'t load'); ph.title = im.path || '';
+      img.replaceWith(ph);
+    };
     box.appendChild(img);
   });
   return box;
+}
+// Full-size picture viewer (tap / Esc closes).
+function openPic(url) {
+  closePic();
+  const v = vEl('div'); v.id = 'pic-viewer';
+  const img = document.createElement('img'); img.src = url; img.alt = 'Picture';
+  const x = vEl('button', 'pv-close', '✕'); x.type = 'button'; x.title = 'Close';
+  v.append(img, x);
+  v.onclick = closePic;
+  document.body.appendChild(v);
+}
+function closePic() { document.getElementById('pic-viewer')?.remove(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePic(); });
+
+// Pictures not stored yet — shown at once from this device while they save, and kept on screen with the reason
+// and ↻ Try again if saving fails (so a missing Storage rule is never silent). key: 'topic:<sid>' or 'pt:<pointId>'.
+const localPics = {};
+function localPicsSet(key, files, status, why) {
+  const cur = localPics[key];
+  if (status === null) { if (cur) cur.urls.forEach(u => URL.revokeObjectURL(u)); delete localPics[key]; return; }
+  const imgs = Array.from(files || []).filter(f => f && f.type && f.type.startsWith('image/')).slice(0, 4);
+  if (!cur && !imgs.length) return;
+  localPics[key] = cur
+    ? { ...cur, status, why: why || '' }
+    : { files: imgs, urls: imgs.map(f => URL.createObjectURL(f)), status, why: why || '' };
+}
+function picErrText(e) {
+  const code = (e && e.code) || '';
+  if (code === 'storage/unauthorized' || /unauthorized|permission/i.test((e && e.message) || ''))
+    return 'picture storage isn\'t switched on for Veritas yet (Firebase → Storage → Rules)';
+  if (code === 'storage/retry-limit-exceeded' || code === 'storage/canceled' || /network/i.test((e && e.message) || '')) return 'no connection — try again';
+  return (e && (e.message || e.code)) || String(e);
+}
+// Saved pictures, else this device's unsaved ones with their status line.
+function picsBlock(saved, key, cls, onRetry) {
+  if (saved && saved.length) return picsEl(saved, cls);
+  const lp = localPics[key];
+  if (!lp) return null;
+  const wrap = vEl('div', 'pics-wrap local');
+  wrap.appendChild(picsEl(lp.urls.map(url => ({ url })), cls, true));
+  const st = vEl('div', 'pic-status' + (lp.status === 'failed' ? ' failed' : ''),
+    lp.status === 'failed' ? `⚠ Picture not saved — ${lp.why}. Only you can see it until it saves.` : '⏳ Saving the picture…');
+  if (lp.status === 'failed' && onRetry) {
+    const b = vEl('button', 'tb-btn', '↻ Try again'); b.type = 'button';
+    b.onclick = e => { e.stopPropagation(); onRetry(lp.files); };
+    st.appendChild(b);
+  }
+  wrap.appendChild(st);
+  return wrap;
 }
 
 function renderTopicBar(sid, turns) {
@@ -2897,7 +2961,9 @@ function renderTopicBar(sid, turns) {
   bar.classList.toggle('compact', wasCompact);
   const ctx = ex0.context || null;
   const top = vEl('div', 'tb-top');
-  if (ctx && ctx.images && ctx.images.length) top.appendChild(picsEl(ctx.images, 'tb-pics'));
+  const savedPics = (ctx && ctx.images) || [];
+  const pics = picsBlock(savedPics, 'topic:' + sid, 'tb-pics', files => saveTopicImages(sid, files));
+  if (pics) top.appendChild(pics);
   const main = vEl('div', 'tb-main');
   main.appendChild(vEl('div', 'tb-label', `Topic · started by ${authorName(s)} · ${fmtWhen(s.createdAt || ex0.timestamp)}`));
   main.appendChild(vEl('div', 'tb-q', ex0.question || s.firstQuestion || 'Debate'));
@@ -2920,7 +2986,7 @@ function renderTopicBar(sid, turns) {
   tog.type = 'button';
   tog.onclick = e => { e.stopPropagation(); const c = !bar.classList.contains('compact'); bar.classList.toggle('compact', c); tog.textContent = c ? '▾ Show topic' : '▴ Hide'; };
   side.appendChild(tog);
-  if ((!ctx || !ctx.images || !ctx.images.length) && canEditSession(s)) {
+  if (!savedPics.length && !localPics['topic:' + sid] && canEditSession(s)) {
     const add = vEl('button', 'tb-btn', '📷 Add the picture');
     add.type = 'button'; add.title = 'Attach the picture this debate is about';
     add.onclick = e => { e.stopPropagation(); topicAddPicture(sid); };
@@ -3036,7 +3102,8 @@ function buildPointTurn(t, isLatest, s, mineDebate) {
   if (ch.unsaved) head.appendChild(vEl('span', null, '· ⚠ not saved'));
   el.appendChild(head);
   el.appendChild(vEl('div', 'turn-msg', ch.text || ''));
-  if (ch.images && ch.images.length) el.appendChild(picsEl(ch.images, 'turn-pics'));
+  const pics = picsBlock(ch.images, 'pt:' + ch.id, 'turn-pics', ch.pending ? null : files => retryPointPics(t.exId, ch.id, files));
+  if (pics) el.appendChild(pics);
   const card = vEl('div', 'pt-card');
   if (ch.pending) {
     const p = vEl('div', 'pt-reply');
@@ -3204,6 +3271,7 @@ async function submitPoint(text, deep, shared, files) {
   const ch = { id: 'ch-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), by: currentAuthor(), text: body.slice(0, 4000), at: Date.now(),
     before: { score: scoreOf(lr), verdict: lr.verdict || 'UNKNOWN' }, pending: true };
   if (target) { ch.replyTo = target.turn; ch.side = target.side; }
+  if (files && files.length) localPicsSet('pt:' + ch.id, files, 'saving');
   (challengeIndex[ex0.id] = challengeIndex[ex0.id] || []).push(ch);
   challengeSid[ex0.id] = sid;
   renderDebate(sid);
@@ -3225,6 +3293,7 @@ async function submitPoint(text, deep, shared, files) {
     delete ch.pending;
   } catch (e) {
     challengeIndex[ex0.id] = (challengeIndex[ex0.id] || []).filter(c => c !== ch);
+    localPicsSet('pt:' + ch.id, null, null);
     renderDebate(sid);
     document.getElementById('q-input').value = text;
     autosizeQ();
@@ -3251,10 +3320,30 @@ async function submitPoint(text, deep, shared, files) {
     showToast("⚠ Scored, but your point couldn't be saved yet (" + (e.message || e) + ')');
     return;
   }
-  if (files && files.length) {
-    try { ch.images = await uploadDebateImages(sid, files); await save(); renderDebate(sid, { keepScroll: true }); }
-    catch (e) { console.warn('[point picture]', e); showToast('⚠ Point saved; the picture couldn\'t be stored yet'); }
+  if (files && files.length) await retryPointPics(ex0.id, ch.id, files);
+}
+// Store a point's picture(s) and add their links to the point (first try and ↻ Try again).
+async function retryPointPics(exId, chId, files) {
+  const sid = challengeSid[exId] || activeSessionId;
+  const ch = (challengeIndex[exId] || []).find(c => c.id === chId);
+  if (!ch || !files || !files.length) return;
+  const key = 'pt:' + chId;
+  localPicsSet(key, files, 'saving');
+  if (activeSessionId === sid && inDebate) renderDebate(sid, { keepScroll: true });
+  try {
+    const images = await uploadDebateImages(sid, files);
+    if (!images.length) throw new Error('no picture to save');
+    const rec = { ...ch, images };
+    delete rec.unsaved; delete rec.pending;
+    await db.ref(`veritas/challenges/${sid}/${exId}/${chId}`).set(rec);
+    ch.images = images;
+    localPicsSet(key, null, null);
+  } catch (e) {
+    console.warn('[point picture]', e);
+    localPicsSet(key, files, 'failed', picErrText(e));
+    showToast('⚠ Point saved, but the picture wasn\'t — ' + picErrText(e), 6000);
   }
+  if (activeSessionId === sid && inDebate) renderDebate(sid, { keepScroll: true });
 }
 
 // ── 📷 Pictures saved with a debate (Firebase Storage, readable folder names) ──
@@ -3294,19 +3383,30 @@ async function saveTopicImages(sid, files) {
   const s = sessions[sid];
   const ex0 = topicExchange(s);
   if (!ex0 || !files || !files.length) return;
+  const key = 'topic:' + sid;
+  const redraw = () => { if (activeSessionId === sid && inDebate) renderTopicBar(sid, debateTurns(sid)); };
+  localPicsSet(key, files, 'saving');
+  redraw();
   try {
     const images = await uploadDebateImages(sid, files);
-    if (!images.length) return;
-    ex0.context = { ...(ex0.context || {}), images };
+    if (!images.length) throw new Error('no picture to save');
     await db.ref(`veritas/sessions/${sid}/exchanges/0/context/images`).set(images);
-    if (activeSessionId === sid && inDebate) renderTopicBar(sid, debateTurns(sid));
+    ex0.context = { ...(ex0.context || {}), images };
+    localPicsSet(key, null, null);
+    showToast('📷 Picture saved with the debate');
   } catch (e) {
     console.warn('[topic picture]', e);
-    showToast("⚠ The picture couldn't be saved yet — the debate keeps its text");
+    localPicsSet(key, files, 'failed', picErrText(e));
+    showToast('⚠ The picture wasn\'t saved — ' + picErrText(e), 6000);
   }
+  redraw();
 }
 function topicAddPicture(sid) {
-  pickFiles({ accept: 'image/*', multiple: true }, files => { showToast('📷 Saving the picture…'); saveTopicImages(sid, files); });
+  pickFiles({ accept: 'image/*', multiple: true }, files => {
+    const bar = document.getElementById('topic-bar');
+    if (bar && bar.dataset.sid === sid) bar.classList.remove('compact');   // open the topic so the new picture shows
+    saveTopicImages(sid, files);
+  });
 }
 
 async function saveSession(question, newExchange, isUpdate=false, catId=null) {
