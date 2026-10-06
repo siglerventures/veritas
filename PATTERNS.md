@@ -78,6 +78,18 @@ genuinely new reusable helper. The cross-app version of this list is AutoFlag's 
   through `submitPoint` (see `ask()`); a new debate is created by `ask()` outside one.
 - Old challenges (no `stance`) show as "🙋 Challenge" turns; old follow-up exchanges show as "question" turns.
 
+## ⚖ Veritas referees — the scale (Rev 6.27)
+- Veritas is the REFEREE, not an opponent: `pointSystem()` tells it to credit what holds up first, name ONE gap (not a rebuttal),
+  and give each side its next 🎯. Each point stores `credited`, `gap`, `to_win: { for, against }`, `answered` (kept by **`leanPoint`**).
+- **THE SCALE** — **`scaleOf(f, a)`** = `50 + 50·(f−a)/(f+a+SCALE_SOFTNESS)` from the side totals, **`scaleLabel(v)`** (Strongly / Leaning
+  Against · Even · Leaning / Strongly For). Only scored points move it (a For point can only push toward For; questions never);
+  Veritas's replies and its confidence % do NOT. **`turnPts(r)`** = strength + 2 when `answered` (🎯 bonus, strength ≥ 4).
+- **`debateScore(turns)`** → `{ sides, scale, credits: {for, against}, next: {for, against}, people }` and stamps each turn's
+  `scaleBefore` / `scaleAfter` ("Scale 50 → 64"). `renderDebate` computes it once and passes it to `renderTopicBar(sid, turns, sco)`.
+- Topic bar: the scale, "How scoring works" (**`howText()`**, shown until the first point — localStorage `veritas_how_seen`), each
+  side's credited case + 🎯 To score next, 🏅. Point cards: ✔ What counts · ✖ Not shown yet · 🎯 To score more; the long text is under
+  **`refDetails(r)`** ("Veritas's full reasoning"). Exchange turns show the one-line answer; the summary moves under "Full answer…".
+
 ## 📷 Pictures kept with a debate — Firebase Storage
 - **`uploadDebateImages(sid, files)`** → `[{ url, path }]` under **`veritas/debates/<topic_slug>_<last 4 of id>/<date>_<name>.jpg`**
   (downscaled JPEG, readable folder per the standing rule; `stSlug`, `debateFolder`). **`saveTopicImages(sid, files)`** puts them on
