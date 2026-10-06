@@ -63,6 +63,39 @@ genuinely new reusable helper. The cross-app version of this list is AutoFlag's 
   NEW tags on challenges come from **`newSince`**. A new notification type → add it to `challengesOnMyAnswers` (or a sibling)
   and to the list renderer; keep "seen" per exchange.
 
+## ⚖ Debate view — scored points (Rev 6.25)
+- A debate = the session's opening exchange (`topicExchange(s)`) + every point made after it. **`renderDebate(sid, { focus, keepScroll })`**
+  draws it: the pinned **`#topic-bar`** (`renderTopicBar` — picture, shared text, question, the claim, For/Against
+  scoreboard, 🏅 leaderboard), then numbered turns (`buildExTurn` / `buildPointTurn`), with the point box moved to the
+  bottom (`body.in-debate` reorders `#main`). **`enterDebateView(on)`** switches layout + button labels.
+- **`debateTurns(sid)`** = exchanges + points, oldest first, numbered; **`debateScore(turns)`** = side totals + per-person points;
+  **`topicClaim(s, turns)`** = the opening answer's `claim` (buildSystem asks for it), else the first point's.
+- **`submitPoint(text, deep, shared, files)`** posts a point: shows it at once ("Scoring…"), asks askAI with **`pointSystem()`** +
+  **`pointPrompt(…)`** (claim, material, opening, last 12 turns, the new point in `<<<POINT … POINT>>>`), keeps
+  `stance` (for/against/neutral), `strength` 0–10, `points_reason`, `reply`, `claim` (**`leanPoint`**), saves it at
+  `veritas/challenges/{sid}/{openingExchangeId}/{id}` (any member, own record — the session stays the starter's).
+  Reply to a turn: **`setReplyTarget({ turn, n, side })`** (👍 I agree / 🙋 I disagree). Every message typed inside a debate goes
+  through `submitPoint` (see `ask()`); a new debate is created by `ask()` outside one.
+- Old challenges (no `stance`) show as "🙋 Challenge" turns; old follow-up exchanges show as "question" turns.
+
+## 📷 Pictures kept with a debate — Firebase Storage
+- **`uploadDebateImages(sid, files)`** → `[{ url, path }]` under **`veritas/debates/<topic_slug>_<last 4 of id>/<date>_<name>.jpg`**
+  (downscaled JPEG, readable folder per the standing rule; `stSlug`, `debateFolder`). **`saveTopicImages(sid, files)`** puts them on
+  `exchanges/0/context/images`; points keep theirs in `images`. **`topicAddPicture(sid)`** = 📷 Add the picture on an older debate.
+  Only the link is in the database — never image data.
+- **Storage rule (Firebase console → Storage → Rules — added by Phil, Rev 6.25).** Inside `match /b/{bucket}/o { … }`:
+  ```
+  // Veritas: debate pictures (Rev 6.25). Signed-in users read; create-only images ≤ 5 MB.
+  match /veritas/debates/{allPaths=**} {
+    allow read: if request.auth != null;
+    allow create: if request.auth != null
+                  && request.resource.size < 5 * 1024 * 1024
+                  && request.resource.contentType.matches('image/.*');
+  }
+  ```
+  Storage rules can't read the Realtime Database roster, so this is "any signed-in account" (same posture as AutoFlag photos);
+  create-only means nobody can overwrite or delete a picture. Without the rule, saving a picture fails quietly and the debate keeps its text.
+
 ## 📱 Phone home
 - **`recentDebatesHtml()`** — the latest 5 debates on the home screen (phones only; wide screens use the sidebar History).
 
