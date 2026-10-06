@@ -43,6 +43,26 @@ genuinely new reusable helper. The cross-app version of this list is AutoFlag's 
   moderators/admins can remove any. Session owners can NOT delete challenges against them.
 - A follow-up typed into someone else's debate starts the asker's own session (theirs kept as AI context) — see `ask()`.
 
+## 🔗 Links — every screen has its own URL (Rev 6.23)
+- `#d/<sessionId>[/<exchangeId>]` · `#c/<categoryId>` · `#fact/<factId>` (sloppy forms accepted: `#/d/…`, `#debate/…`).
+- **`setRoute(hash, replace?)`** pushes a history entry (◀ Back works) — call it from any new screen; it's a no-op while
+  **`route()`** is applying a URL (popstate / hashchange / shared link on load), so screens never loop.
+- **`loadSession(sid, exId?)`** fetches a debate started after page load, scrolls to + flashes `exId` (**`focusExchange`**),
+  and handles a deleted debate. **`shareDebate(exId?)`** = phone share sheet, else copy link. 🔗 Share sits in the debate header.
+
+## 🗂 History filters
+- **`HIST_FILTERS`** (All · Mine · ⚖ Challenged · ✓ Acknowledged), **`setHistFilter(f)`** (remembered in localStorage),
+  **`histFilterMatch(f, sid, s)`**. Lists sort by **`activityAt(sid, s)`** — a new challenge bumps a debate up.
+  **`sessionChallenges[sid]`** = `{ count, lastAt }`, **`challengeSid[exId]`** = its session (built in `rebuildChallengeIndex`).
+
+## 🔔 Notifications (in-app)
+- Seen state at **`veritas/seen/{uid}`** = `{ all, ex: { exchangeId: time } }`, mirrored in localStorage (works before the
+  rules paste). **`loadSeen` / `saveSeen` / `seenTsFor(exId)`**; **`markSessionSeen(sid)`** — viewing a debate reads it.
+- **`challengesOnMyAnswers()`** = challenges by others on answers you wrote (**`answerOwner(s, ex)`**: the exchange's author,
+  else the session's starter); **`updateNotifBadge()`** drives the 🔔 count and the tab title; **`toggleNotifs`** opens the list.
+  NEW tags on challenges come from **`newSince`**. A new notification type → add it to `challengesOnMyAnswers` (or a sibling)
+  and to the list renderer; keep "seen" per exchange.
+
 ## 📱 Phone home
 - **`recentDebatesHtml()`** — the latest 5 debates on the home screen (phones only; wide screens use the sidebar History).
 
